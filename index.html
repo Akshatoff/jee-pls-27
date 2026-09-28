@@ -115,46 +115,83 @@
 
         // Checklists items for each chapter
         const tasks = ['Lecture', 'Module', 'DPP', 'PYQs', 'Revision'];
-        const priorities = ['High', 'Medium', 'Low'];
+        const priorities = ['P1', 'P2', 'P3'];
         const priorityColors = {
-            'High': 'bg-red-100 text-red-800 border-red-200',
-            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            'Low': 'bg-green-100 text-green-800 border-green-200'
+            'P1': 'bg-red-100 text-red-800 border-red-200',
+            'P2': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'P3': 'bg-green-100 text-green-800 border-green-200'
         };
 
         // Syllabus Data Structure (Grouped by Subject -> Priority -> Chapters)
         const syllabusData = {
             'Physics': {
-                'High': [
-                    'Modern Physics', 'Current Electricity', 'Thermodynamics & KTG', 'Geometrical Optics'
+                'P1': [
+                    { name: "Mechanics — Laws of Motion and Friction", weight: "3-4", subtopics: "Newton's Laws, FBD problems, connected bodies, friction on inclines", tip: "Ensure FBD is drawn for every problem; approach errors are most common here" },
+                    { name: "Mechanics — Work, Energy and Power", weight: "3-4", subtopics: "Work-energy theorem, conservation of energy, power calculations, spring PE", tip: "Identify energy method vs force method before starting — saves 2+ minutes per problem" },
+                    { name: "Rotational Motion", weight: "3-4", subtopics: "Moment of inertia, torque, angular momentum conservation, rolling without slipping", tip: "Rolling condition v = ωr is tested in almost every paper; master it cold" },
+                    { name: "Current Electricity", weight: "3-5", subtopics: "Kirchhoff's laws, Wheatstone bridge, resistivity, potentiometer, meter bridge", tip: "Highest question count in Physics across recent sessions — treat as non-negotiable" },
+                    { name: "Electrostatics", weight: "3-4", subtopics: "Coulomb's law, electric field, potential, capacitors, Gauss's law", tip: "Capacitor charging/discharging combinations appear in nearly every session" },
+                    { name: "Modern Physics", weight: "3-4", subtopics: "Photoelectric effect, Bohr's model, radioactive decay, nuclear reactions", tip: "Energy level transitions and half-life calculations are highly predictable question types" }
                 ],
-                'Medium': [
-                    'Electrostatics', 'Magnetic Effects of Current', 'Rotational Motion', 'Kinematics', 'Laws of Motion'
+                'P2': [
+                    { name: "Optics — Ray and Wave", weight: "2-3", subtopics: "Mirrors, lenses, refraction, interference, diffraction, polarisation", tip: "Lens maker's equation and YDSE path difference are the two highest-yield subtopics" },
+                    { name: "Magnetism and Moving Charges", weight: "2-3", subtopics: "Lorentz force, circular motion in magnetic field, Biot-Savart, Ampere's law", tip: "Velocity selector and mass spectrometer appear frequently" },
+                    { name: "EMI and AC Circuits", weight: "2-3", subtopics: "Faraday's law, Lenz's law, LCR circuits, resonance, transformer", tip: "LCR resonance condition and phase difference are highly predictable" },
+                    { name: "SHM and Oscillations", weight: "2", subtopics: "Displacement-velocity-acceleration phase, energy in SHM, pendulum", tip: "Conceptual questions on phase relationships are the most common JEE Mains type" },
+                    { name: "Waves and Sound", weight: "2", subtopics: "Transverse and longitudinal waves, standing waves, beats, Doppler effect", tip: "Doppler effect and beats are the highest-yield subtopics" }
                 ],
-                'Low': [
-                    'Units & Dimensions', 'Gravitation', 'Wave Optics', 'Properties of Matter', 'EM Waves'
+                'P3': [
+                    { name: "Gravitation", weight: "1-2", subtopics: "Gravitational potential energy, orbital velocity, escape velocity, Kepler's laws", tip: "One formula-application question almost every paper — do not leave it unrevised" },
+                    { name: "Thermodynamics and Kinetic Theory", weight: "1-2", subtopics: "First and second law, heat engines, efficiency, degrees of freedom", tip: "Efficiency of heat engines and gas law combined questions appear regularly" },
+                    { name: "Fluid Mechanics", weight: "1-2", subtopics: "Bernoulli's equation, continuity, Archimedes' principle, viscosity", tip: "Buoyancy combination problems are a JEE favourite" },
+                    { name: "Semiconductors", weight: "1-2", subtopics: "Logic gates, diodes, transistors", tip: "Make sure to cover basic NCERT logic gates" }
                 ]
             },
             'Chemistry': {
-                'High': [
-                    'Coordination Compounds', 'Chemical Thermodynamics', 'General Organic Chemistry (GOC)', 'p-Block Elements'
+                'P1': [
+                    { name: "Organic Chemistry — Basic Concepts and GOC", weight: "2-3", subtopics: "Hybridisation, inductive and mesomeric effects, acidic/basic strength, resonance structures", tip: "GOC understanding directly affects ability to answer all other Organic questions" },
+                    { name: "Organic Chemistry — Functional Groups and Named Reactions", weight: "3-5", subtopics: "Aldehydes/Ketones/Carboxylic Acids, Amines, Haloalkanes", tip: "Highest Organic Chemistry question count — master product prediction and named reaction patterns" },
+                    { name: "Chemical Bonding and Molecular Structure", weight: "2-3", subtopics: "VSEPR, hybridisation, bond order, dipole moment, VBT and MOT", tip: "Bond order and magnetic properties of diatomic molecules appear in almost every session" },
+                    { name: "Coordination Chemistry", weight: "2-3", subtopics: "IUPAC naming, isomerism, crystal field theory, EAN rule, stability", tip: "IUPAC naming and magnetic moment calculations are the two most predictable question types" },
+                    { name: "Equilibrium — Chemical and Ionic", weight: "2-3", subtopics: "ICE table, Kp/Kc/Kx relationships, buffer solutions, hydrolysis, solubility product", tip: "ICE table calculations and buffer pH are high-frequency and directly improvable" },
+                    { name: "p-Block Elements — Groups 13 to 18", weight: "2-3", subtopics: "Properties of oxides, halides, hydrides; anomalous behaviour", tip: "Pure NCERT-based questions — every line of NCERT p-Block is potential JEE material" }
                 ],
-                'Medium': [
-                    'Chemical Kinetics', 'Solutions', 'Atomic Structure', 'Hydrocarbons', 'Chemical Bonding'
+                'P2': [
+                    { name: "Electrochemistry", weight: "2-3", subtopics: "Nernst equation, EMF calculation, cell notation, Faraday's laws, kohlrausch's law", tip: "EMF calculations from electrode potentials appear with high regularity" },
+                    { name: "Chemical Kinetics", weight: "2", subtopics: "Rate law, integrated rate equations, half-life, Arrhenius equation", tip: "Order from experimental data and Arrhenius activation energy questions are most common" },
+                    { name: "Thermodynamics and Thermochemistry", weight: "2", subtopics: "Hess's law, entropy, Gibbs free energy, bond enthalpy", tip: "ΔG = ΔH − TΔS equilibrium condition questions appear in most sessions" },
+                    { name: "Mole Concept and Stoichiometry", weight: "2", subtopics: "Limiting reagent, percentage composition, empirical formula", tip: "Stoichiometry with limiting reagent is the most common calculation type" },
+                    { name: "Atomic Structure", weight: "2", subtopics: "Bohr's model, de Broglie wavelength, Heisenberg uncertainty, quantum numbers", tip: "Quantum number permissibility questions appear almost every session" },
+                    { name: "d-Block and f-Block Elements", weight: "1-2", subtopics: "Electronic configuration, oxidation states, colour, magnetic moment, KMnO₄ and K₂Cr₂O₇", tip: "KMnO₄ reactions and colour of transition metal ions are highly predictable" }
                 ],
-                'Low': [
-                    'Biomolecules', 'Periodic Table', 'Redox Reactions', 'Metallurgy', 'Surface Chemistry'
+                'P3': [
+                    { name: "Solutions and Colligative Properties", weight: "1-2", subtopics: "Raoult's law, depression of freezing point, elevation of boiling point, osmotic pressure", tip: "Elevation/depression calculations with i factor appear regularly" },
+                    { name: "Polymers and Biomolecules", weight: "1-2", subtopics: "Classification of polymers, types of biomolecules, reducing/non-reducing sugars", tip: "Pure factual NCERT questions — one careful NCERT read is sufficient" },
+                    { name: "Surface Chemistry and Environmental Chemistry", weight: "1-2", subtopics: "Adsorption, colloids, pollution", tip: "Read NCERT thoroughly for factual questions" }
                 ]
             },
             'Mathematics': {
-                'High': [
-                    'Definite Integration', 'Application of Derivatives', 'Vectors & 3D Geometry', 'Matrices & Determinants'
+                'P1': [
+                    { name: "Integration — Definite and Indefinite", weight: "3-5", subtopics: "Integration by parts, substitution, limits of definite integrals, area under curves", tip: "Highest question count in Mathematics — master standard forms and the ILATE rule cold" },
+                    { name: "Conic Sections — Parabola, Ellipse, Hyperbola", weight: "3-4", subtopics: "Tangent and normal equations, chord of contact, locus of midpoint", tip: "T = 0 shortcut for tangent equations works for all three conics — learn once, use everywhere" },
+                    { name: "Probability", weight: "3-4", subtopics: "Bayes' theorem, conditional probability, binomial distribution, expected value", tip: "Bayes' theorem and binomial distribution together cover most JEE Probability questions" },
+                    { name: "Matrices and Determinants", weight: "3-4", subtopics: "Determinant evaluation, inverse matrix, system of equations, Cayley-Hamilton theorem", tip: "Consistency of system of equations and adjoint/inverse of 3×3 matrices are most tested" },
+                    { name: "Limits, Continuity and Differentiability", weight: "2-3", subtopics: "L'Hopital's rule, sandwich theorem, continuity of piecewise functions", tip: "Piecewise function continuity/differentiability at breakpoints appears in almost every session" },
+                    { name: "Differential Equations", weight: "2-3", subtopics: "Variable separable, homogeneous, linear first-order, order and degree", tip: "Variable separable and linear first-order types together cover most JEE DE questions" }
                 ],
-                'Medium': [
-                    'Conic Sections', 'Probability', 'Sequence & Series', 'Complex Numbers', 'Functions'
+                'P2': [
+                    { name: "Vectors and 3D Geometry", weight: "2-3", subtopics: "Dot and cross product, angle between lines/planes, distance point-to-line", tip: "Distance from point to line/plane and direction cosines are the highest-yield subtopics" },
+                    { name: "Complex Numbers", weight: "2", subtopics: "Argand plane locus, modulus-argument form, cube roots of unity, De Moivre's theorem", tip: "Locus problems using |z − a| = r are the most commonly tested Complex Numbers type" },
+                    { name: "Quadratic Equations and Inequalities", weight: "2", subtopics: "Nature of roots, Vieta's formulas, location of roots, quadratic inequalities", tip: "Location of roots problems (both roots positive, same sign, etc.) are highly predictable" },
+                    { name: "Sequences and Series", weight: "2", subtopics: "AP, GP, AGP, sum of n terms, sum of squares and cubes, telescoping series", tip: "Telescoping series and AGP sum are the two most JEE-specific types — practise both" },
+                    { name: "Straight Lines and Circles", weight: "2", subtopics: "Family of lines, distance between parallel lines, relative position of circles", tip: "Family of lines concept reduces multi-step problems to one substitution — master it" },
+                    { name: "Application of Derivatives", weight: "2", subtopics: "Increasing/decreasing, maxima/minima, tangent/normal to curve, rate of change", tip: "Maxima/minima using second derivative test and tangent slope questions are most common" }
                 ],
-                'Low': [
-                    'Mathematical Reasoning', 'Statistics', 'Quadratic Equations', 'Binomial Theorem'
+                'P3': [
+                    { name: "Trigonometry — Functions and Equations", weight: "1-2", subtopics: "Compound angle, general solutions, inverse trig, trigonometric inequalities", tip: "General solution and inverse trig domain/range are the key areas" },
+                    { name: "Permutations and Combinations", weight: "1-2", subtopics: "Selection, arrangement, derangement, distribution of identical/distinct objects", tip: "Apply multiplication principle case-by-case — never search for a single formula" },
+                    { name: "Binomial Theorem", weight: "1-2", subtopics: "General term, middle term, coefficient of x^n, binomial approximation", tip: "General term and coefficient extraction are predictable — revise the T_{r+1} formula" },
+                    { name: "Statistics", weight: "1-2", subtopics: "Mean, variance, standard deviation", tip: "Very scoring and formula-based, ensure you know variance properties" }
                 ]
             }
         };
@@ -173,9 +210,9 @@
                 newProgress[subject] = {};
                 for (const priority in syllabusData[subject]) {
                     syllabusData[subject][priority].forEach(chapter => {
-                        newProgress[subject][chapter] = {};
+                        newProgress[subject][chapter.name] = {};
                         tasks.forEach(task => {
-                            newProgress[subject][chapter][task] = false;
+                            newProgress[subject][chapter.name][task] = false;
                         });
                     });
                 }
@@ -198,7 +235,7 @@
                         tasks.forEach(task => {
                             totalTasks++;
                             subjTotal++;
-                            if (userProgress[subject] && userProgress[subject][chapter] && userProgress[subject][chapter][task]) {
+                            if (userProgress[subject] && userProgress[subject][chapter.name] && userProgress[subject][chapter.name][task]) {
                                 completedTasks++;
                                 subjCompleted++;
                             }
@@ -271,7 +308,7 @@
                     </div>
                 `;
                 
-                let chaptersHtml = '<div class="space-y-6">';
+                let chaptersHtml = '<div class="space-y-8">';
                 
                 priorities.forEach(priority => {
                     const chapters = syllabusData[subject][priority];
@@ -281,11 +318,11 @@
 
                     chaptersHtml += `
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-3">
-                                <h3 class="font-semibold text-gray-700">${priority} Priority</h3>
-                                <span class="text-xs font-medium px-2.5 py-0.5 rounded border ${badgeClass}">JEE Weightage</span>
+                            <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                                <h3 class="font-bold text-gray-800 text-lg">${priority} Priority</h3>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded border shadow-sm ${badgeClass}">High Yield Focus</span>
                             </div>
-                            <div class="divide-y divide-gray-100">
+                            <div class="flex flex-col">
                     `;
                     
                     chapters.forEach(chapter => {
@@ -293,25 +330,40 @@
                         tasks.forEach(task => {
                             // Safely check value
                             const isChecked = userProgress[subject] && 
-                                              userProgress[subject][chapter] && 
-                                              userProgress[subject][chapter][task];
+                                              userProgress[subject][chapter.name] && 
+                                              userProgress[subject][chapter.name][task];
                             
                             const checkedAttr = isChecked ? 'checked' : '';
                             
                             tasksHtml += `
-                                <label class="flex items-center gap-2 cursor-pointer group p-2 hover:bg-indigo-50/50 rounded-lg transition-colors">
+                                <label class="flex items-center gap-2 cursor-pointer group p-2 -ml-2 hover:bg-indigo-50 rounded-lg transition-colors">
                                     <input type="checkbox" class="checkbox-custom rounded text-indigo-600 focus:ring-indigo-500"
                                         ${checkedAttr}
-                                        onchange="toggleTask('${subject}', '${chapter}', '${task}', this)">
-                                    <span class="text-sm text-gray-600 group-hover:text-indigo-900 transition-colors">${task}</span>
+                                        onchange="toggleTask('${subject}', '${chapter.name}', '${task}', this)">
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-900 transition-colors">${task}</span>
                                 </label>
                             `;
                         });
 
                         chaptersHtml += `
-                            <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50/30 transition-colors">
-                                <div class="font-medium text-gray-800 md:w-1/3">${chapter}</div>
-                                <div class="flex flex-wrap md:flex-nowrap gap-x-6 gap-y-2 md:w-2/3 justify-start md:justify-end">
+                            <div class="p-6 flex flex-col gap-4 hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0">
+                                <div class="flex flex-wrap justify-between items-start gap-4">
+                                    <h4 class="font-bold text-gray-900 text-lg leading-tight md:max-w-xl">${chapter.name}</h4>
+                                    <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-bold bg-indigo-100 text-indigo-800 whitespace-nowrap shadow-sm border border-indigo-200">
+                                        Expected: ${chapter.weight} Qs
+                                    </span>
+                                </div>
+                                
+                                <p class="text-sm text-gray-600 leading-relaxed">
+                                    <span class="font-semibold text-gray-800">Subtopics:</span> ${chapter.subtopics}
+                                </p>
+                                
+                                <div class="bg-amber-50/70 border border-amber-200 rounded-lg p-3 flex gap-3 mt-1">
+                                    <span class="text-lg leading-none pt-0.5">💡</span>
+                                    <p class="text-sm text-amber-900 leading-snug"><span class="font-bold">Strategy:</span> ${chapter.tip}</p>
+                                </div>
+                                
+                                <div class="flex flex-wrap gap-x-8 gap-y-2 mt-2 pt-4 border-t border-gray-100">
                                     ${tasksHtml}
                                 </div>
                             </div>

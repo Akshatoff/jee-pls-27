@@ -112,20 +112,9 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 mb-4"></div>
-        <p class="text-gray-800 font-bold text-lg">Syncing with Cloud...</p>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'jee-ultimate-tracker';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    <script>
+        const STORAGE_KEY = 'jee_ultimate_tracker_data';
+        let syncTimeout;
 
         const tasks = ['Lecture', 'Module', 'DPP', 'PYQs', 'Revision'];
         const prioritiesOrder = ['P1', 'P2', 'P3', 'P4'];
@@ -166,8 +155,6 @@
             }
         };
 
-        let db, auth, currentUserId, syncTimeout;
-
         function getEmptyState() {
             let state = { progress: {}, daily: { lastDate: new Date().toLocaleDateString(), tasks: {} } };
             // Init Syllabus
@@ -185,41 +172,19 @@
             return state;
         }
 
-        async function initFirebase() {
-            if (!firebaseConfig) { finishLoad(); return; }
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                let user;
-                if (initialAuthToken) {
-                    const cred = await signInWithCustomToken(auth, initialAuthToken);
-                    user = cred.user;
-                } else {
-                    const cred = await signInAnonymously(auth);
-                    user = cred.user;
-                }
-                currentUserId = user.uid;
-                await loadData();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('error-message').textContent = 'Cloud sync failed. Running locally.';
-                document.getElementById('error-banner').classList.remove('hidden');
-                finishLoad();
-            }
+        function initApp() {
+            loadData();
+            renderAll();
         }
 
-        async function loadData() {
-            if (!currentUserId || !db) return;
+        function loadData() {
             try {
                 showSyncStatus('Loading...', 'text-gray-500');
-                const ref = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'tracker');
-                const snap = await getDoc(ref);
-                
+                const saved = localStorage.getItem(STORAGE_KEY);
                 appState = getEmptyState(); 
-                if (snap.exists()) {
-                    const data = snap.data();
+                
+                if (saved) {
+                    const data = JSON.parse(saved);
                     
                     // Merge Progress
                     if (data.progress) {
@@ -248,19 +213,17 @@
                             }
                         } else {
                             // Date mismatch -> Reset happens natively by keeping getEmptyState() daily values (all false)
-                            // We just save immediately to sync reset.
                             appState.daily.lastDate = today;
                             scheduleSave(); 
                         }
                     }
                 }
-                showSyncStatus('Cloud Synced', 'text-green-600');
+                showSyncStatus('Loaded Locally', 'text-green-600');
                 setTimeout(hideSyncStatus, 2500);
             } catch (err) {
                 console.error(err);
-                showSyncStatus('Sync Error', 'text-red-500');
+                showSyncStatus('Load Error', 'text-red-500');
             }
-            finishLoad();
         }
 
         function scheduleSave() {
@@ -269,19 +232,10 @@
             syncTimeout = setTimeout(saveData, 500);
         }
 
-        async function saveData() {
-            if (!currentUserId || !db) {
-                showSyncStatus('Local Only (No Cloud)', 'text-orange-500');
-                return;
-            }
+        function saveData() {
             try {
-                const ref = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'tracker');
-                await setDoc(ref, {
-                    progress: appState.progress,
-                    daily: appState.daily,
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
-                showSyncStatus('Saved', 'text-green-600');
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                showSyncStatus('Saved Locally', 'text-green-600');
                 setTimeout(hideSyncStatus, 2500);
             } catch (err) { 
                 console.error("Save error:", err); 
@@ -293,7 +247,7 @@
             const el = document.getElementById('sync-status');
             if (el) {
                 el.classList.remove('hidden');
-                el.className = `ml-4 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all ${colorClass} bg-white border border-gray-200`;
+                el.className = `ml-4 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all ${colorClass} bg-white border border-gray-200 shadow-sm`;
                 el.innerHTML = spinner 
                     ? `<svg class="animate-spin h-3.5 w-3.5 ${colorClass}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ${msg}`
                     : msg;
@@ -303,12 +257,6 @@
         function hideSyncStatus() {
             const el = document.getElementById('sync-status');
             if (el) el.classList.add('hidden');
-        }
-
-        function finishLoad() {
-            if(!appState.progress.Physics) appState = getEmptyState();
-            renderAll();
-            document.getElementById('loading-overlay').classList.add('hidden');
         }
 
         function calculateStats() {
@@ -475,7 +423,7 @@
 
         window.toggleDaily = function(task, el) {
             appState.daily.tasks[task] = el.checked;
-            renderDaily(); // Re-render daily specific to update full styling
+            renderDaily(); 
             scheduleSave();
         };
 
@@ -509,15 +457,14 @@
                     for (const chap of syllabus[subj][prio]) {
                         const chDone = getChapterProgress(subj, chap);
                         if (chDone < tasks.length) {
-                            // Found incomplete chapter
                             const missing = tasks.filter(t => !appState.progress[subj][chap][t]);
                             suggested = { subj, prio, chap, missing };
-                            break; // break chapter loop
+                            break; 
                         }
                     }
-                    if (suggested) break; // break subject loop
+                    if (suggested) break; 
                 }
-                if (suggested) break; // break priority loop
+                if (suggested) break; 
             }
 
             if (suggested) {
@@ -544,8 +491,8 @@
             document.getElementById('suggestion-modal').classList.add('hidden');
         };
 
-        window.addEventListener('DOMContentLoaded', initFirebase);
-
+        // Initialize immediately when DOM is ready
+        window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>

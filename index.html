@@ -3,531 +3,519 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JEE Prep Tracker</title>
+    <title>JEE Ultimate Prep Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* bg-gray-100 */
-        }
-        
-        /* Custom scrollbar for a neat look */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-
-        .checkbox-custom {
-            accent-color: #4f46e5; /* indigo-600 */
-            width: 1.125rem;
-            height: 1.125rem;
-            cursor: pointer;
-        }
-        
-        .tab-active {
-            border-bottom: 2px solid #4f46e5;
-            color: #4f46e5;
-            font-weight: 600;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .checkbox-custom { accent-color: #4f46e5; width: 1.25rem; height: 1.25rem; cursor: pointer; transition: all 0.2s; }
+        .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600; }
+        .progress-stripe { background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem; }
     </style>
 </head>
-<body class="min-h-screen text-gray-800 flex flex-col">
+<body class="min-h-screen text-gray-800 flex flex-col relative">
 
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="max-w-6xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+    <header class="bg-white shadow-sm sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">JEE Prep Tracker</h1>
+                    <div class="bg-indigo-600 p-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">JEE Tracker</h1>
                 </div>
                 
-                <div class="w-full md:w-1/3">
-                    <div class="flex justify-between text-sm font-medium mb-1">
-                        <span class="text-gray-500">Overall Progress</span>
-                        <span id="overall-progress-text" class="text-indigo-600">0%</span>
+                <div class="flex gap-4 items-center w-full md:w-auto">
+                    <div class="flex-grow md:w-64">
+                        <div class="flex justify-between text-xs font-bold mb-1 text-gray-500 uppercase tracking-wide">
+                            <span>Total Completion</span>
+                            <span id="overall-progress-text" class="text-indigo-600">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 shadow-inner overflow-hidden">
+                            <div id="overall-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-700 ease-out progress-stripe" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div id="overall-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
-                    </div>
+                    <button onclick="suggestNextChapter()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-sm whitespace-nowrap flex items-center gap-2">
+                        <span>🎯 What to study now?</span>
+                    </button>
                 </div>
             </div>
         </div>
         
-        <!-- Tabs Navigation -->
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-            <nav class="flex space-x-8" aria-label="Tabs" id="tabs-container">
-                <button onclick="switchTab('Physics')" id="tab-Physics" class="tab-active py-2 px-1 text-sm font-medium transition-colors hover:text-indigo-600">Physics</button>
-                <button onclick="switchTab('Chemistry')" id="tab-Chemistry" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300">Chemistry</button>
-                <button onclick="switchTab('Mathematics')" id="tab-Mathematics" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300">Mathematics</button>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2 border-t border-gray-100 pt-2">
+            <nav class="flex overflow-x-auto space-x-8 pb-1 scrollbar-hide" aria-label="Tabs" id="tabs-container">
+                <button onclick="switchTab('Physics')" id="tab-Physics" class="tab-active py-2 px-1 text-sm font-medium transition-colors hover:text-indigo-600 whitespace-nowrap">Physics</button>
+                <button onclick="switchTab('Chemistry')" id="tab-Chemistry" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap">Chemistry</button>
+                <button onclick="switchTab('Mathematics')" id="tab-Mathematics" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap">Mathematics</button>
+                <button onclick="switchTab('Daily')" id="tab-Daily" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap flex items-center gap-1">
+                    <span>📅 Daily System</span>
+                </button>
             </nav>
         </div>
     </header>
 
-    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-            <p class="text-gray-600 font-medium">Loading your progress...</p>
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <!-- Error Banner -->
+        <div id="error-banner" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg" role="alert">
+            <div class="flex">
+                <div class="flex-shrink-0"><svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg></div>
+                <div class="ml-3"><p class="text-sm text-red-700 font-medium" id="error-message"></p></div>
+            </div>
         </div>
 
-        <!-- Notification Banner for errors -->
-        <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-            <p class="font-bold">Error</p>
-            <p id="error-message">Something went wrong.</p>
-        </div>
-
-        <!-- Subject Containers -->
+        <!-- Subject/Daily Containers -->
         <div id="content-Physics" class="subject-content hidden"></div>
         <div id="content-Chemistry" class="subject-content hidden"></div>
         <div id="content-Mathematics" class="subject-content hidden"></div>
-
+        <div id="content-Daily" class="subject-content hidden"></div>
     </main>
 
-    <footer class="bg-white border-t py-6 mt-auto">
-        <div class="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
-            Keep grinding. Consistency is the key to JEE success.
+    <div id="suggestion-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                                🎯
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                                <h3 class="text-lg font-bold leading-6 text-gray-900" id="modal-title">Recommended Next Target</h3>
+                                <div class="mt-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span id="modal-priority-badge" class="px-2.5 py-0.5 rounded text-xs font-bold shadow-sm"></span>
+                                        <span id="modal-subject" class="text-xs font-semibold text-gray-500 uppercase"></span>
+                                    </div>
+                                    <p id="modal-chapter-name" class="text-xl font-bold text-gray-800"></p>
+                                    <div class="mt-3">
+                                        <p class="text-sm text-gray-600 font-medium mb-1">Missing Completion Tasks:</p>
+                                        <div id="modal-missing-tasks" class="flex flex-wrap gap-2"></div>
+                                    </div>
+                                </div>
+                                <p class="mt-4 text-sm text-gray-500">This recommendation is based on the highest priority incomplete topic across all subjects.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="button" onclick="closeModal()" class="inline-flex w-full justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto transition-colors">Let's go!</button>
+                    </div>
+                </div>
+            </div>
         </div>
-    </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-100 border-t-indigo-600 mb-4"></div>
+        <p class="text-gray-800 font-bold text-lg">Syncing with Cloud...</p>
+    </div>
 
     <script type="module">
-        // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Environment variables provided by Immersive environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-jee-tracker';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'jee-ultimate-tracker';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Checklists items for each chapter
         const tasks = ['Lecture', 'Module', 'DPP', 'PYQs', 'Revision'];
-        const priorities = ['P1', 'P2', 'P3'];
-        const priorityColors = {
-            'P1': 'bg-red-100 text-red-800 border-red-200',
-            'P2': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            'P3': 'bg-green-100 text-green-800 border-green-200'
+        const prioritiesOrder = ['P1', 'P2', 'P3', 'P4'];
+        
+        const priorityMeta = {
+            'P1': { label: '🔴 P1 — Must Master', colors: 'bg-red-50 text-red-700 border-red-200', bar: 'bg-red-500' },
+            'P2': { label: '🟠 P2 — High Priority', colors: 'bg-orange-50 text-orange-700 border-orange-200', bar: 'bg-orange-500' },
+            'P3': { label: '🟡 P3 — Complete After', colors: 'bg-yellow-50 text-yellow-700 border-yellow-200', bar: 'bg-yellow-500' },
+            'P4': { label: '🟢 P4 — Quick Finish', colors: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' }
         };
 
-        // Syllabus Data Structure (Grouped by Subject -> Priority -> Chapters)
-        const syllabusData = {
+        const syllabus = {
             'Physics': {
-                'P1': [
-                    { name: "Mechanics — Laws of Motion and Friction", weight: "3-4", subtopics: "Newton's Laws, FBD problems, connected bodies, friction on inclines", tip: "Ensure FBD is drawn for every problem; approach errors are most common here" },
-                    { name: "Mechanics — Work, Energy and Power", weight: "3-4", subtopics: "Work-energy theorem, conservation of energy, power calculations, spring PE", tip: "Identify energy method vs force method before starting — saves 2+ minutes per problem" },
-                    { name: "Rotational Motion", weight: "3-4", subtopics: "Moment of inertia, torque, angular momentum conservation, rolling without slipping", tip: "Rolling condition v = ωr is tested in almost every paper; master it cold" },
-                    { name: "Current Electricity", weight: "3-5", subtopics: "Kirchhoff's laws, Wheatstone bridge, resistivity, potentiometer, meter bridge", tip: "Highest question count in Physics across recent sessions — treat as non-negotiable" },
-                    { name: "Electrostatics", weight: "3-4", subtopics: "Coulomb's law, electric field, potential, capacitors, Gauss's law", tip: "Capacitor charging/discharging combinations appear in nearly every session" },
-                    { name: "Modern Physics", weight: "3-4", subtopics: "Photoelectric effect, Bohr's model, radioactive decay, nuclear reactions", tip: "Energy level transitions and half-life calculations are highly predictable question types" }
-                ],
-                'P2': [
-                    { name: "Optics — Ray and Wave", weight: "2-3", subtopics: "Mirrors, lenses, refraction, interference, diffraction, polarisation", tip: "Lens maker's equation and YDSE path difference are the two highest-yield subtopics" },
-                    { name: "Magnetism and Moving Charges", weight: "2-3", subtopics: "Lorentz force, circular motion in magnetic field, Biot-Savart, Ampere's law", tip: "Velocity selector and mass spectrometer appear frequently" },
-                    { name: "EMI and AC Circuits", weight: "2-3", subtopics: "Faraday's law, Lenz's law, LCR circuits, resonance, transformer", tip: "LCR resonance condition and phase difference are highly predictable" },
-                    { name: "SHM and Oscillations", weight: "2", subtopics: "Displacement-velocity-acceleration phase, energy in SHM, pendulum", tip: "Conceptual questions on phase relationships are the most common JEE Mains type" },
-                    { name: "Waves and Sound", weight: "2", subtopics: "Transverse and longitudinal waves, standing waves, beats, Doppler effect", tip: "Doppler effect and beats are the highest-yield subtopics" }
-                ],
-                'P3': [
-                    { name: "Gravitation", weight: "1-2", subtopics: "Gravitational potential energy, orbital velocity, escape velocity, Kepler's laws", tip: "One formula-application question almost every paper — do not leave it unrevised" },
-                    { name: "Thermodynamics and Kinetic Theory", weight: "1-2", subtopics: "First and second law, heat engines, efficiency, degrees of freedom", tip: "Efficiency of heat engines and gas law combined questions appear regularly" },
-                    { name: "Fluid Mechanics", weight: "1-2", subtopics: "Bernoulli's equation, continuity, Archimedes' principle, viscosity", tip: "Buoyancy combination problems are a JEE favourite" },
-                    { name: "Semiconductors", weight: "1-2", subtopics: "Logic gates, diodes, transistors", tip: "Make sure to cover basic NCERT logic gates" }
-                ]
+                'P1': ['Current Electricity', 'Electrostatics', 'Ray Optics', 'Modern Physics', 'Semiconductors', 'Moving Charges & Magnetism', 'EMI', 'AC', 'NLM', 'WEP', 'Rotation'],
+                'P2': ['Kinematics', 'Thermodynamics', 'SHM', 'Waves', 'Gravitation', 'COM/Collision', 'Fluids', 'Wave Optics', 'Units/Dimensions/Errors', 'KTG', 'Thermal Properties'],
+                'P3': ['Magnetism & Matter', 'EM Waves', 'Mechanical Properties of Solids', 'Elasticity', 'Experimental Physics']
             },
             'Chemistry': {
-                'P1': [
-                    { name: "Organic Chemistry — Basic Concepts and GOC", weight: "2-3", subtopics: "Hybridisation, inductive and mesomeric effects, acidic/basic strength, resonance structures", tip: "GOC understanding directly affects ability to answer all other Organic questions" },
-                    { name: "Organic Chemistry — Functional Groups and Named Reactions", weight: "3-5", subtopics: "Aldehydes/Ketones/Carboxylic Acids, Amines, Haloalkanes", tip: "Highest Organic Chemistry question count — master product prediction and named reaction patterns" },
-                    { name: "Chemical Bonding and Molecular Structure", weight: "2-3", subtopics: "VSEPR, hybridisation, bond order, dipole moment, VBT and MOT", tip: "Bond order and magnetic properties of diatomic molecules appear in almost every session" },
-                    { name: "Coordination Chemistry", weight: "2-3", subtopics: "IUPAC naming, isomerism, crystal field theory, EAN rule, stability", tip: "IUPAC naming and magnetic moment calculations are the two most predictable question types" },
-                    { name: "Equilibrium — Chemical and Ionic", weight: "2-3", subtopics: "ICE table, Kp/Kc/Kx relationships, buffer solutions, hydrolysis, solubility product", tip: "ICE table calculations and buffer pH are high-frequency and directly improvable" },
-                    { name: "p-Block Elements — Groups 13 to 18", weight: "2-3", subtopics: "Properties of oxides, halides, hydrides; anomalous behaviour", tip: "Pure NCERT-based questions — every line of NCERT p-Block is potential JEE material" }
-                ],
-                'P2': [
-                    { name: "Electrochemistry", weight: "2-3", subtopics: "Nernst equation, EMF calculation, cell notation, Faraday's laws, kohlrausch's law", tip: "EMF calculations from electrode potentials appear with high regularity" },
-                    { name: "Chemical Kinetics", weight: "2", subtopics: "Rate law, integrated rate equations, half-life, Arrhenius equation", tip: "Order from experimental data and Arrhenius activation energy questions are most common" },
-                    { name: "Thermodynamics and Thermochemistry", weight: "2", subtopics: "Hess's law, entropy, Gibbs free energy, bond enthalpy", tip: "ΔG = ΔH − TΔS equilibrium condition questions appear in most sessions" },
-                    { name: "Mole Concept and Stoichiometry", weight: "2", subtopics: "Limiting reagent, percentage composition, empirical formula", tip: "Stoichiometry with limiting reagent is the most common calculation type" },
-                    { name: "Atomic Structure", weight: "2", subtopics: "Bohr's model, de Broglie wavelength, Heisenberg uncertainty, quantum numbers", tip: "Quantum number permissibility questions appear almost every session" },
-                    { name: "d-Block and f-Block Elements", weight: "1-2", subtopics: "Electronic configuration, oxidation states, colour, magnetic moment, KMnO₄ and K₂Cr₂O₇", tip: "KMnO₄ reactions and colour of transition metal ions are highly predictable" }
-                ],
-                'P3': [
-                    { name: "Solutions and Colligative Properties", weight: "1-2", subtopics: "Raoult's law, depression of freezing point, elevation of boiling point, osmotic pressure", tip: "Elevation/depression calculations with i factor appear regularly" },
-                    { name: "Polymers and Biomolecules", weight: "1-2", subtopics: "Classification of polymers, types of biomolecules, reducing/non-reducing sugars", tip: "Pure factual NCERT questions — one careful NCERT read is sufficient" },
-                    { name: "Surface Chemistry and Environmental Chemistry", weight: "1-2", subtopics: "Adsorption, colloids, pollution", tip: "Read NCERT thoroughly for factual questions" }
-                ]
+                'P1': ['Mole Concept', 'Chemical Bonding', 'GOC', 'Thermodynamics', 'Electrochemistry', 'Chemical Equilibrium', 'Ionic Equilibrium', 'Coordination Compounds', 'Carbonyl Compounds', 'Amines', 'Hydrocarbons'],
+                'P2': ['Solutions', 'Chemical Kinetics', 'Haloalkanes/Haloarenes', 'Alcohols/Phenols/Ethers', 'Periodic Table', 'p-Block', 'd/f Block', 'Atomic Structure', 'Redox'],
+                'P3': ['States of Matter', 'Surface Chemistry', 'Biomolecules', 'Metallurgy', 'Qualitative Analysis', 'Practical Chemistry'],
+                'P4': ['Polymers', 'Chemistry in Everyday Life', 'Environmental Chemistry', 'Hydrogen', 's-Block']
             },
             'Mathematics': {
-                'P1': [
-                    { name: "Integration — Definite and Indefinite", weight: "3-5", subtopics: "Integration by parts, substitution, limits of definite integrals, area under curves", tip: "Highest question count in Mathematics — master standard forms and the ILATE rule cold" },
-                    { name: "Conic Sections — Parabola, Ellipse, Hyperbola", weight: "3-4", subtopics: "Tangent and normal equations, chord of contact, locus of midpoint", tip: "T = 0 shortcut for tangent equations works for all three conics — learn once, use everywhere" },
-                    { name: "Probability", weight: "3-4", subtopics: "Bayes' theorem, conditional probability, binomial distribution, expected value", tip: "Bayes' theorem and binomial distribution together cover most JEE Probability questions" },
-                    { name: "Matrices and Determinants", weight: "3-4", subtopics: "Determinant evaluation, inverse matrix, system of equations, Cayley-Hamilton theorem", tip: "Consistency of system of equations and adjoint/inverse of 3×3 matrices are most tested" },
-                    { name: "Limits, Continuity and Differentiability", weight: "2-3", subtopics: "L'Hopital's rule, sandwich theorem, continuity of piecewise functions", tip: "Piecewise function continuity/differentiability at breakpoints appears in almost every session" },
-                    { name: "Differential Equations", weight: "2-3", subtopics: "Variable separable, homogeneous, linear first-order, order and degree", tip: "Variable separable and linear first-order types together cover most JEE DE questions" }
-                ],
-                'P2': [
-                    { name: "Vectors and 3D Geometry", weight: "2-3", subtopics: "Dot and cross product, angle between lines/planes, distance point-to-line", tip: "Distance from point to line/plane and direction cosines are the highest-yield subtopics" },
-                    { name: "Complex Numbers", weight: "2", subtopics: "Argand plane locus, modulus-argument form, cube roots of unity, De Moivre's theorem", tip: "Locus problems using |z − a| = r are the most commonly tested Complex Numbers type" },
-                    { name: "Quadratic Equations and Inequalities", weight: "2", subtopics: "Nature of roots, Vieta's formulas, location of roots, quadratic inequalities", tip: "Location of roots problems (both roots positive, same sign, etc.) are highly predictable" },
-                    { name: "Sequences and Series", weight: "2", subtopics: "AP, GP, AGP, sum of n terms, sum of squares and cubes, telescoping series", tip: "Telescoping series and AGP sum are the two most JEE-specific types — practise both" },
-                    { name: "Straight Lines and Circles", weight: "2", subtopics: "Family of lines, distance between parallel lines, relative position of circles", tip: "Family of lines concept reduces multi-step problems to one substitution — master it" },
-                    { name: "Application of Derivatives", weight: "2", subtopics: "Increasing/decreasing, maxima/minima, tangent/normal to curve, rate of change", tip: "Maxima/minima using second derivative test and tangent slope questions are most common" }
-                ],
-                'P3': [
-                    { name: "Trigonometry — Functions and Equations", weight: "1-2", subtopics: "Compound angle, general solutions, inverse trig, trigonometric inequalities", tip: "General solution and inverse trig domain/range are the key areas" },
-                    { name: "Permutations and Combinations", weight: "1-2", subtopics: "Selection, arrangement, derangement, distribution of identical/distinct objects", tip: "Apply multiplication principle case-by-case — never search for a single formula" },
-                    { name: "Binomial Theorem", weight: "1-2", subtopics: "General term, middle term, coefficient of x^n, binomial approximation", tip: "General term and coefficient extraction are predictable — revise the T_{r+1} formula" },
-                    { name: "Statistics", weight: "1-2", subtopics: "Mean, variance, standard deviation", tip: "Very scoring and formula-based, ensure you know variance properties" }
-                ]
+                'P1': ['Quadratic Equations', 'Sequence & Series', 'Matrices', 'Determinants', 'Straight Lines', 'Circle', 'Vector Algebra', '3D Geometry', 'Limits', 'Continuity & Differentiability', 'Application of Derivatives', 'Integration', 'Differential Equations', 'Probability'],
+                'P2': ['Functions', 'Trigonometry', 'Complex Numbers', 'P&C', 'Binomial', 'Statistics', 'Parabola', 'Ellipse', 'Hyperbola', 'Area Under Curves'],
+                'P3': ['Sets & Relations', 'Inverse Trigonometry', 'Mathematical Reasoning', 'Mathematical Induction', 'Linear Programming']
             }
         };
 
-        // User state: stores checked status of tasks
-        // Format: userProgress[Subject][Chapter][Task] = boolean
-        let userProgress = {};
-        let db;
-        let auth;
-        let currentUserId = null;
-        let syncTimeout = null;
+        const defaultDailyTasks = ['Solve 50 PYQs', 'Revise Short Notes', 'Read NCERT 30 mins', 'Mock Test / Analysis'];
 
-        function initEmptyProgress() {
-            const newProgress = {};
-            for (const subject in syllabusData) {
-                newProgress[subject] = {};
-                for (const priority in syllabusData[subject]) {
-                    syllabusData[subject][priority].forEach(chapter => {
-                        newProgress[subject][chapter.name] = {};
-                        tasks.forEach(task => {
-                            newProgress[subject][chapter.name][task] = false;
-                        });
+        let appState = {
+            progress: {},
+            daily: {
+                lastDate: new Date().toLocaleDateString(),
+                tasks: {}
+            }
+        };
+
+        let db, auth, currentUserId, syncTimeout;
+
+        function getEmptyState() {
+            let state = { progress: {}, daily: { lastDate: new Date().toLocaleDateString(), tasks: {} } };
+            // Init Syllabus
+            for (const subj in syllabus) {
+                state.progress[subj] = {};
+                for (const prio in syllabus[subj]) {
+                    syllabus[subj][prio].forEach(chap => {
+                        state.progress[subj][chap] = {};
+                        tasks.forEach(t => state.progress[subj][chap][t] = false);
                     });
                 }
             }
-            return newProgress;
+            // Init Daily
+            defaultDailyTasks.forEach(task => { state.daily.tasks[task] = false; });
+            return state;
+        }
+
+        async function initFirebase() {
+            if (!firebaseConfig) { finishLoad(); return; }
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                let user;
+                if (initialAuthToken) {
+                    const cred = await signInWithCustomToken(auth, initialAuthToken);
+                    user = cred.user;
+                } else {
+                    const cred = await signInAnonymously(auth);
+                    user = cred.user;
+                }
+                currentUserId = user.uid;
+                await loadData();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('error-message').textContent = 'Cloud sync failed. Running locally.';
+                document.getElementById('error-banner').classList.remove('hidden');
+                finishLoad();
+            }
+        }
+
+        async function loadData() {
+            if (!currentUserId || !db) return;
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'tracker');
+                const snap = await getDoc(ref);
+                
+                appState = getEmptyState(); 
+                if (snap.exists()) {
+                    const data = snap.data();
+                    
+                    // Merge Progress
+                    if (data.progress) {
+                        for (const s in data.progress) {
+                            if (!appState.progress[s]) continue;
+                            for (const c in data.progress[s]) {
+                                if (!appState.progress[s][c]) continue;
+                                for (const t in data.progress[s][c]) {
+                                    appState.progress[s][c][t] = !!data.progress[s][c][t];
+                                }
+                            }
+                        }
+                    }
+
+                    // Merge & Check Daily
+                    if (data.daily) {
+                        const today = new Date().toLocaleDateString();
+                        if (data.daily.lastDate === today) {
+                            appState.daily.lastDate = data.daily.lastDate;
+                            if (data.daily.tasks) {
+                                for (const dt in data.daily.tasks) {
+                                    if (appState.daily.tasks[dt] !== undefined) {
+                                        appState.daily.tasks[dt] = data.daily.tasks[dt];
+                                    }
+                                }
+                            }
+                        } else {
+                            // Date mismatch -> Reset happens natively by keeping getEmptyState() daily values (all false)
+                            // We just save immediately to sync reset.
+                            appState.daily.lastDate = today;
+                            scheduleSave(); 
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+            finishLoad();
+        }
+
+        function scheduleSave() {
+            if (syncTimeout) clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(saveData, 1500);
+        }
+
+        async function saveData() {
+            if (!currentUserId || !db) return;
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'tracker');
+                await setDoc(ref, {
+                    progress: appState.progress,
+                    daily: appState.daily,
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
+            } catch (err) { console.error("Save error:", err); }
+        }
+
+        function finishLoad() {
+            if(!appState.progress.Physics) appState = getEmptyState();
+            renderAll();
+            document.getElementById('loading-overlay').classList.add('hidden');
         }
 
         function calculateStats() {
-            let totalTasks = 0;
-            let completedTasks = 0;
-            
-            const subjectStats = {};
-
-            for (const subject in syllabusData) {
-                let subjTotal = 0;
-                let subjCompleted = 0;
-                
-                for (const priority in syllabusData[subject]) {
-                    syllabusData[subject][priority].forEach(chapter => {
-                        tasks.forEach(task => {
-                            totalTasks++;
-                            subjTotal++;
-                            if (userProgress[subject] && userProgress[subject][chapter.name] && userProgress[subject][chapter.name][task]) {
-                                completedTasks++;
-                                subjCompleted++;
-                            }
+            let total = 0, done = 0;
+            for (const s in syllabus) {
+                for (const p in syllabus[s]) {
+                    syllabus[s][p].forEach(c => {
+                        tasks.forEach(t => {
+                            total++;
+                            if (appState.progress[s] && appState.progress[s][c] && appState.progress[s][c][t]) done++;
                         });
                     });
                 }
-                subjectStats[subject] = {
-                    total: subjTotal,
-                    completed: subjCompleted,
-                    percentage: subjTotal > 0 ? Math.round((subjCompleted / subjTotal) * 100) : 0
-                };
             }
-
-            const overallPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-            return { overallPercentage, subjectStats };
+            return { total, done, pct: total > 0 ? Math.round((done/total)*100) : 0 };
         }
 
-        function updateProgressBars() {
+        function renderAll() {
             const stats = calculateStats();
-            
-            // Overall
-            document.getElementById('overall-progress-bar').style.width = `${stats.overallPercentage}%`;
-            document.getElementById('overall-progress-text').textContent = `${stats.overallPercentage}%`;
-            
-            // Subjects
-            for (const subject in stats.subjectStats) {
-                const bar = document.getElementById(`progress-bar-${subject}`);
-                const text = document.getElementById(`progress-text-${subject}`);
-                if (bar && text) {
-                    bar.style.width = `${stats.subjectStats[subject].percentage}%`;
-                    text.textContent = `${stats.subjectStats[subject].percentage}%`;
-                }
-            }
+            document.getElementById('overall-progress-bar').style.width = `${stats.pct}%`;
+            document.getElementById('overall-progress-text').textContent = `${stats.pct}%`;
+
+            ['Physics', 'Chemistry', 'Mathematics'].forEach(renderSubject);
+            renderDaily();
+            switchTab('Physics'); // default
         }
 
-        // Handle Checkbox clicks
-        window.toggleTask = function(subject, chapter, task, element) {
-            if (!userProgress[subject]) userProgress[subject] = {};
-            if (!userProgress[subject][chapter]) userProgress[subject][chapter] = {};
-            
-            userProgress[subject][chapter][task] = element.checked;
-            
-            updateProgressBars();
-            scheduleSave();
-        };
+        function getChapterProgress(subj, chap) {
+            let chDone = 0;
+            tasks.forEach(t => { if(appState.progress[subj][chap][t]) chDone++; });
+            return chDone;
+        }
 
-        function renderSyllabus() {
-            const tabs = ['Physics', 'Chemistry', 'Mathematics'];
+        function renderSubject(subj) {
+            const container = document.getElementById(`content-${subj}`);
+            let html = `<div class="mb-8"><h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">${subj}</h2></div>`;
             
-            tabs.forEach(subject => {
-                const container = document.getElementById(`content-${subject}`);
-                container.innerHTML = ''; // Clear existing
+            html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
 
-                // Subject Progress Header
-                const headerHtml = `
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-800">${subject} Syllabus</h2>
-                            <p class="text-sm text-gray-500 mt-1">Track your chapter-wise completion</p>
-                        </div>
-                        <div class="w-full md:w-64">
-                            <div class="flex justify-between text-sm font-medium mb-1">
-                                <span class="text-gray-600">Subject Progress</span>
-                                <span id="progress-text-${subject}" class="text-indigo-600">0%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="progress-bar-${subject}" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+            prioritiesOrder.forEach(prio => {
+                if (!syllabus[subj][prio]) return;
                 
-                let chaptersHtml = '<div class="space-y-8">';
-                
-                priorities.forEach(priority => {
-                    const chapters = syllabusData[subject][priority];
-                    if (!chapters || chapters.length === 0) return;
-                    
-                    const badgeClass = priorityColors[priority];
+                syllabus[subj][prio].forEach(chap => {
+                    const meta = priorityMeta[prio];
+                    const chDone = getChapterProgress(subj, chap);
+                    const chPct = Math.round((chDone / tasks.length) * 100);
+                    const isComplete = chDone === tasks.length;
+                    const cardBg = isComplete ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md';
 
-                    chaptersHtml += `
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-                                <h3 class="font-bold text-gray-800 text-lg">${priority} Priority</h3>
-                                <span class="text-xs font-semibold px-2.5 py-1 rounded border shadow-sm ${badgeClass}">High Yield Focus</span>
-                            </div>
-                            <div class="flex flex-col">
-                    `;
-                    
-                    chapters.forEach(chapter => {
-                        let tasksHtml = '';
-                        tasks.forEach(task => {
-                            // Safely check value
-                            const isChecked = userProgress[subject] && 
-                                              userProgress[subject][chapter.name] && 
-                                              userProgress[subject][chapter.name][task];
-                            
-                            const checkedAttr = isChecked ? 'checked' : '';
-                            
-                            tasksHtml += `
-                                <label class="flex items-center gap-2 cursor-pointer group p-2 -ml-2 hover:bg-indigo-50 rounded-lg transition-colors">
-                                    <input type="checkbox" class="checkbox-custom rounded text-indigo-600 focus:ring-indigo-500"
-                                        ${checkedAttr}
-                                        onchange="toggleTask('${subject}', '${chapter.name}', '${task}', this)">
-                                    <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-900 transition-colors">${task}</span>
-                                </label>
-                            `;
-                        });
-
-                        chaptersHtml += `
-                            <div class="p-6 flex flex-col gap-4 hover:bg-gray-50/50 transition-colors border-b border-gray-100 last:border-0">
-                                <div class="flex flex-wrap justify-between items-start gap-4">
-                                    <h4 class="font-bold text-gray-900 text-lg leading-tight md:max-w-xl">${chapter.name}</h4>
-                                    <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-bold bg-indigo-100 text-indigo-800 whitespace-nowrap shadow-sm border border-indigo-200">
-                                        Expected: ${chapter.weight} Qs
-                                    </span>
-                                </div>
-                                
-                                <p class="text-sm text-gray-600 leading-relaxed">
-                                    <span class="font-semibold text-gray-800">Subtopics:</span> ${chapter.subtopics}
-                                </p>
-                                
-                                <div class="bg-amber-50/70 border border-amber-200 rounded-lg p-3 flex gap-3 mt-1">
-                                    <span class="text-lg leading-none pt-0.5">💡</span>
-                                    <p class="text-sm text-amber-900 leading-snug"><span class="font-bold">Strategy:</span> ${chapter.tip}</p>
-                                </div>
-                                
-                                <div class="flex flex-wrap gap-x-8 gap-y-2 mt-2 pt-4 border-t border-gray-100">
-                                    ${tasksHtml}
-                                </div>
-                            </div>
+                    let tasksHtml = '';
+                    tasks.forEach(t => {
+                        const checked = appState.progress[subj][chap][t] ? 'checked' : '';
+                        tasksHtml += `
+                            <label class="flex items-center gap-2.5 p-1.5 hover:bg-gray-100 rounded-md cursor-pointer group transition-colors">
+                                <input type="checkbox" class="checkbox-custom rounded" ${checked} onchange="toggleTask('${subj}','${chap}','${t}',this)">
+                                <span class="text-sm font-medium text-gray-600 group-hover:text-gray-900 ${checked ? 'line-through opacity-60' : ''}">${t}</span>
+                            </label>
                         `;
                     });
 
-                    chaptersHtml += `
+                    html += `
+                        <div class="${cardBg} rounded-2xl p-5 border transition-all duration-300 flex flex-col">
+                            <div class="flex justify-between items-start mb-3 gap-2">
+                                <h3 class="font-bold text-gray-900 text-lg leading-tight flex-grow">${chap}</h3>
+                                <span class="whitespace-nowrap px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${meta.colors}">${prio}</span>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                                    <span>Progress</span>
+                                    <span>${chDone}/${tasks.length}</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div class="${meta.bar} h-1.5 rounded-full transition-all duration-500" style="width: ${chPct}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-auto grid grid-cols-2 gap-x-2 gap-y-1 pt-3 border-t border-gray-100">
+                                ${tasksHtml}
                             </div>
                         </div>
                     `;
                 });
-                
-                chaptersHtml += '</div>';
-                container.innerHTML = headerHtml + chaptersHtml;
             });
-            
-            // Init with Physics open
-            switchTab('Physics');
-            updateProgressBars();
+            html += `</div>`;
+            container.innerHTML = html;
         }
 
-        // Tab Switching Logic
-        window.switchTab = function(subjectName) {
-            const tabs = ['Physics', 'Chemistry', 'Mathematics'];
+        function renderDaily() {
+            const container = document.getElementById('content-Daily');
             
-            tabs.forEach(tab => {
-                // Update Button styling
+            let tasksHtml = '';
+            let dDone = 0;
+            const dTotal = Object.keys(appState.daily.tasks).length;
+
+            for (const t in appState.daily.tasks) {
+                const checked = appState.daily.tasks[t];
+                if (checked) dDone++;
+                
+                tasksHtml += `
+                    <label class="flex items-center p-4 bg-white border ${checked ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-200'} rounded-xl cursor-pointer hover:shadow-sm transition-all group mb-3">
+                        <input type="checkbox" class="checkbox-custom rounded" ${checked ? 'checked' : ''} onchange="toggleDaily('${t}',this)">
+                        <span class="ml-4 text-lg font-medium ${checked ? 'text-gray-400 line-through' : 'text-gray-700 group-hover:text-indigo-900'}">${t}</span>
+                    </label>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto">
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Daily Consistency</h2>
+                        <p class="text-gray-500 font-medium">These tasks reset automatically every midnight. Date: ${appState.daily.lastDate}</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-bold text-gray-500 uppercase">Today's Goals</span>
+                            <span class="text-indigo-600 font-bold">${dDone}/${dTotal} Done</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-3 mb-6">
+                            <div class="bg-indigo-500 h-3 rounded-full transition-all duration-500" style="width: ${(dDone/dTotal)*100}%"></div>
+                        </div>
+                        ${tasksHtml}
+                    </div>
+                    
+                    <div class="text-center text-sm text-gray-400">
+                        <p>"Success is the sum of small efforts, repeated day in and day out."</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.toggleTask = function(subj, chap, task, el) {
+            appState.progress[subj][chap][task] = el.checked;
+            
+            // Minimal DOM update for responsiveness
+            const chDone = getChapterProgress(subj, chap);
+            const card = el.closest('.rounded-2xl');
+            const progressText = card.querySelector('.text-xs.font-bold.text-gray-500 + span');
+            const progressBar = card.querySelector('.rounded-full > div');
+            const labelSpan = el.nextElementSibling;
+            
+            progressText.textContent = `${chDone}/${tasks.length}`;
+            progressBar.style.width = `${Math.round((chDone/tasks.length)*100)}%`;
+            
+            if(el.checked) {
+                labelSpan.classList.add('line-through', 'opacity-60');
+                if(chDone === tasks.length) {
+                    card.classList.add('bg-indigo-50', 'border-indigo-200');
+                    card.classList.remove('bg-white');
+                }
+            } else {
+                labelSpan.classList.remove('line-through', 'opacity-60');
+                card.classList.remove('bg-indigo-50', 'border-indigo-200');
+                card.classList.add('bg-white');
+            }
+
+            const stats = calculateStats();
+            document.getElementById('overall-progress-bar').style.width = `${stats.pct}%`;
+            document.getElementById('overall-progress-text').textContent = `${stats.pct}%`;
+
+            scheduleSave();
+        };
+
+        window.toggleDaily = function(task, el) {
+            appState.daily.tasks[task] = el.checked;
+            renderDaily(); // Re-render daily specific to update full styling
+            scheduleSave();
+        };
+
+        window.switchTab = function(tabName) {
+            ['Physics', 'Chemistry', 'Mathematics', 'Daily'].forEach(tab => {
                 const btn = document.getElementById(`tab-${tab}`);
-                if (tab === subjectName) {
+                const content = document.getElementById(`content-${tab}`);
+                
+                if (tab === tabName) {
                     btn.classList.add('tab-active');
                     btn.classList.remove('text-gray-500', 'hover:text-gray-700', 'border-transparent', 'hover:border-gray-300');
+                    content.classList.remove('hidden');
                 } else {
                     btn.classList.remove('tab-active');
                     btn.classList.add('text-gray-500', 'hover:text-gray-700', 'border-transparent', 'hover:border-gray-300');
-                }
-                
-                // Update Content visibility
-                const content = document.getElementById(`content-${tab}`);
-                if (tab === subjectName) {
-                    content.classList.remove('hidden');
-                } else {
                     content.classList.add('hidden');
                 }
             });
         };
 
-        function showError(msg) {
-            const banner = document.getElementById('error-banner');
-            const msgEl = document.getElementById('error-message');
-            msgEl.textContent = msg;
-            banner.classList.remove('hidden');
-            setTimeout(() => { banner.classList.add('hidden'); }, 5000);
-        }
+        window.suggestNextChapter = function() {
+            let suggested = null;
 
-        function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('hidden');
-        }
-
-        async function loadDataFromFirebase() {
-            if (!currentUserId || !db) return;
+            // Algorithm: Loop P1 -> P4, then subjects
+            const subjects = ['Physics', 'Chemistry', 'Mathematics'];
             
-            try {
-                // Rule 1 strictly followed: artifacts/{appId}/users/{userId}/{collectionName}
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'progress');
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    // Merge saved data with base structure in case syllabus adds new items later
-                    userProgress = initEmptyProgress(); 
+            for (const prio of prioritiesOrder) {
+                for (const subj of subjects) {
+                    if (!syllabus[subj][prio]) continue;
                     
-                    if (data.progress) {
-                        for (const subject in data.progress) {
-                            for (const chapter in data.progress[subject]) {
-                                for (const task in data.progress[subject][chapter]) {
-                                    if (userProgress[subject] && userProgress[subject][chapter]) {
-                                        userProgress[subject][chapter][task] = data.progress[subject][chapter][task];
-                                    }
-                                }
-                            }
+                    for (const chap of syllabus[subj][prio]) {
+                        const chDone = getChapterProgress(subj, chap);
+                        if (chDone < tasks.length) {
+                            // Found incomplete chapter
+                            const missing = tasks.filter(t => !appState.progress[subj][chap][t]);
+                            suggested = { subj, prio, chap, missing };
+                            break; // break chapter loop
                         }
                     }
-                } else {
-                    userProgress = initEmptyProgress();
+                    if (suggested) break; // break subject loop
                 }
+                if (suggested) break; // break priority loop
+            }
+
+            if (suggested) {
+                const meta = priorityMeta[suggested.prio];
+                document.getElementById('modal-priority-badge').className = `px-2.5 py-0.5 rounded text-xs font-bold shadow-sm ${meta.colors}`;
+                document.getElementById('modal-priority-badge').textContent = suggested.prio;
+                document.getElementById('modal-subject').textContent = suggested.subj;
+                document.getElementById('modal-chapter-name').textContent = suggested.chap;
                 
-                renderSyllabus();
-                hideLoading();
-
-            } catch (error) {
-                console.error("Error loading data:", error);
-                showError("Could not load your saved progress. Showing empty tracker.");
-                userProgress = initEmptyProgress();
-                renderSyllabus();
-                hideLoading();
-            }
-        }
-
-        // Debounced save to prevent excessive writes
-        function scheduleSave() {
-            if (syncTimeout) {
-                clearTimeout(syncTimeout);
-            }
-            syncTimeout = setTimeout(() => {
-                saveDataToFirebase();
-            }, 1000); // 1 second debounce
-        }
-
-        async function saveDataToFirebase() {
-            if (!currentUserId || !db) return;
-            
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'progress');
-                await setDoc(docRef, {
-                    progress: userProgress,
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
-            } catch (error) {
-                console.error("Error saving data:", error);
-                showError("Failed to save progress to cloud. Changes are only local.");
-            }
-        }
-
-        // Initialize App
-        async function initialize() {
-            if (!firebaseConfig) {
-                console.warn("No Firebase config provided. Running in local-only mode.");
-                userProgress = initEmptyProgress();
-                renderSyllabus();
-                hideLoading();
-                return;
-            }
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                // Authentication (Rule 3)
-                let user;
-                if (initialAuthToken) {
-                    const credential = await signInWithCustomToken(auth, initialAuthToken);
-                    user = credential.user;
-                } else {
-                    const credential = await signInAnonymously(auth);
-                    user = credential.user;
-                }
+                const missingHtml = suggested.missing.map(m => 
+                    `<span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                        Pending: ${m}
+                    </span>`
+                ).join('');
+                document.getElementById('modal-missing-tasks').innerHTML = missingHtml;
                 
-                currentUserId = user.uid;
-                await loadDataFromFirebase();
-                
-            } catch (error) {
-                console.error("Firebase init failed:", error);
-                showError("Could not connect to database. Operating in local mode.");
-                userProgress = initEmptyProgress();
-                renderSyllabus();
-                hideLoading();
+                document.getElementById('suggestion-modal').classList.remove('hidden');
+            } else {
+                alert("Amazing! You have completed the entire syllabus tracking!");
             }
-        }
+        };
 
-        // Boot
-        window.addEventListener('DOMContentLoaded', () => {
-            initialize();
-        });
+        window.closeModal = function() {
+            document.getElementById('suggestion-modal').classList.add('hidden');
+        };
+
+        window.addEventListener('DOMContentLoaded', initFirebase);
+
     </script>
 </body>
 </html>

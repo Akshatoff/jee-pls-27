@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEE Prep Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        
+        /* Custom scrollbar for a neat look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .checkbox-custom {
+            accent-color: #4f46e5; /* indigo-600 */
+            width: 1.125rem;
+            height: 1.125rem;
+            cursor: pointer;
+        }
+        
+        .tab-active {
+            border-bottom: 2px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex flex-col">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">JEE Prep Tracker</h1>
+                </div>
+                
+                <div class="w-full md:w-1/3">
+                    <div class="flex justify-between text-sm font-medium mb-1">
+                        <span class="text-gray-500">Overall Progress</span>
+                        <span id="overall-progress-text" class="text-indigo-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="overall-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs Navigation -->
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <nav class="flex space-x-8" aria-label="Tabs" id="tabs-container">
+                <button onclick="switchTab('Physics')" id="tab-Physics" class="tab-active py-2 px-1 text-sm font-medium transition-colors hover:text-indigo-600">Physics</button>
+                <button onclick="switchTab('Chemistry')" id="tab-Chemistry" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300">Chemistry</button>
+                <button onclick="switchTab('Mathematics')" id="tab-Mathematics" class="text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-gray-300">Mathematics</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+            <p class="text-gray-600 font-medium">Loading your progress...</p>
+        </div>
+
+        <!-- Notification Banner for errors -->
+        <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p class="font-bold">Error</p>
+            <p id="error-message">Something went wrong.</p>
+        </div>
+
+        <!-- Subject Containers -->
+        <div id="content-Physics" class="subject-content hidden"></div>
+        <div id="content-Chemistry" class="subject-content hidden"></div>
+        <div id="content-Mathematics" class="subject-content hidden"></div>
+
+    </main>
+
+    <footer class="bg-white border-t py-6 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
+            Keep grinding. Consistency is the key to JEE success.
+        </div>
+    </footer>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment variables provided by Immersive environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-jee-tracker';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Checklists items for each chapter
+        const tasks = ['Lecture', 'Module', 'DPP', 'PYQs', 'Revision'];
+        const priorities = ['High', 'Medium', 'Low'];
+        const priorityColors = {
+            'High': 'bg-red-100 text-red-800 border-red-200',
+            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'Low': 'bg-green-100 text-green-800 border-green-200'
+        };
+
+        // Syllabus Data Structure (Grouped by Subject -> Priority -> Chapters)
+        const syllabusData = {
+            'Physics': {
+                'High': [
+                    'Modern Physics', 'Current Electricity', 'Thermodynamics & KTG', 'Geometrical Optics'
+                ],
+                'Medium': [
+                    'Electrostatics', 'Magnetic Effects of Current', 'Rotational Motion', 'Kinematics', 'Laws of Motion'
+                ],
+                'Low': [
+                    'Units & Dimensions', 'Gravitation', 'Wave Optics', 'Properties of Matter', 'EM Waves'
+                ]
+            },
+            'Chemistry': {
+                'High': [
+                    'Coordination Compounds', 'Chemical Thermodynamics', 'General Organic Chemistry (GOC)', 'p-Block Elements'
+                ],
+                'Medium': [
+                    'Chemical Kinetics', 'Solutions', 'Atomic Structure', 'Hydrocarbons', 'Chemical Bonding'
+                ],
+                'Low': [
+                    'Biomolecules', 'Periodic Table', 'Redox Reactions', 'Metallurgy', 'Surface Chemistry'
+                ]
+            },
+            'Mathematics': {
+                'High': [
+                    'Definite Integration', 'Application of Derivatives', 'Vectors & 3D Geometry', 'Matrices & Determinants'
+                ],
+                'Medium': [
+                    'Conic Sections', 'Probability', 'Sequence & Series', 'Complex Numbers', 'Functions'
+                ],
+                'Low': [
+                    'Mathematical Reasoning', 'Statistics', 'Quadratic Equations', 'Binomial Theorem'
+                ]
+            }
+        };
+
+        // User state: stores checked status of tasks
+        // Format: userProgress[Subject][Chapter][Task] = boolean
+        let userProgress = {};
+        let db;
+        let auth;
+        let currentUserId = null;
+        let syncTimeout = null;
+
+        function initEmptyProgress() {
+            const newProgress = {};
+            for (const subject in syllabusData) {
+                newProgress[subject] = {};
+                for (const priority in syllabusData[subject]) {
+                    syllabusData[subject][priority].forEach(chapter => {
+                        newProgress[subject][chapter] = {};
+                        tasks.forEach(task => {
+                            newProgress[subject][chapter][task] = false;
+                        });
+                    });
+                }
+            }
+            return newProgress;
+        }
+
+        function calculateStats() {
+            let totalTasks = 0;
+            let completedTasks = 0;
+            
+            const subjectStats = {};
+
+            for (const subject in syllabusData) {
+                let subjTotal = 0;
+                let subjCompleted = 0;
+                
+                for (const priority in syllabusData[subject]) {
+                    syllabusData[subject][priority].forEach(chapter => {
+                        tasks.forEach(task => {
+                            totalTasks++;
+                            subjTotal++;
+                            if (userProgress[subject] && userProgress[subject][chapter] && userProgress[subject][chapter][task]) {
+                                completedTasks++;
+                                subjCompleted++;
+                            }
+                        });
+                    });
+                }
+                subjectStats[subject] = {
+                    total: subjTotal,
+                    completed: subjCompleted,
+                    percentage: subjTotal > 0 ? Math.round((subjCompleted / subjTotal) * 100) : 0
+                };
+            }
+
+            const overallPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            return { overallPercentage, subjectStats };
+        }
+
+        function updateProgressBars() {
+            const stats = calculateStats();
+            
+            // Overall
+            document.getElementById('overall-progress-bar').style.width = `${stats.overallPercentage}%`;
+            document.getElementById('overall-progress-text').textContent = `${stats.overallPercentage}%`;
+            
+            // Subjects
+            for (const subject in stats.subjectStats) {
+                const bar = document.getElementById(`progress-bar-${subject}`);
+                const text = document.getElementById(`progress-text-${subject}`);
+                if (bar && text) {
+                    bar.style.width = `${stats.subjectStats[subject].percentage}%`;
+                    text.textContent = `${stats.subjectStats[subject].percentage}%`;
+                }
+            }
+        }
+
+        // Handle Checkbox clicks
+        window.toggleTask = function(subject, chapter, task, element) {
+            if (!userProgress[subject]) userProgress[subject] = {};
+            if (!userProgress[subject][chapter]) userProgress[subject][chapter] = {};
+            
+            userProgress[subject][chapter][task] = element.checked;
+            
+            updateProgressBars();
+            scheduleSave();
+        };
+
+        function renderSyllabus() {
+            const tabs = ['Physics', 'Chemistry', 'Mathematics'];
+            
+            tabs.forEach(subject => {
+                const container = document.getElementById(`content-${subject}`);
+                container.innerHTML = ''; // Clear existing
+
+                // Subject Progress Header
+                const headerHtml = `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">${subject} Syllabus</h2>
+                            <p class="text-sm text-gray-500 mt-1">Track your chapter-wise completion</p>
+                        </div>
+                        <div class="w-full md:w-64">
+                            <div class="flex justify-between text-sm font-medium mb-1">
+                                <span class="text-gray-600">Subject Progress</span>
+                                <span id="progress-text-${subject}" class="text-indigo-600">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="progress-bar-${subject}" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                let chaptersHtml = '<div class="space-y-6">';
+                
+                priorities.forEach(priority => {
+                    const chapters = syllabusData[subject][priority];
+                    if (!chapters || chapters.length === 0) return;
+                    
+                    const badgeClass = priorityColors[priority];
+
+                    chaptersHtml += `
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center gap-3">
+                                <h3 class="font-semibold text-gray-700">${priority} Priority</h3>
+                                <span class="text-xs font-medium px-2.5 py-0.5 rounded border ${badgeClass}">JEE Weightage</span>
+                            </div>
+                            <div class="divide-y divide-gray-100">
+                    `;
+                    
+                    chapters.forEach(chapter => {
+                        let tasksHtml = '';
+                        tasks.forEach(task => {
+                            // Safely check value
+                            const isChecked = userProgress[subject] && 
+                                              userProgress[subject][chapter] && 
+                                              userProgress[subject][chapter][task];
+                            
+                            const checkedAttr = isChecked ? 'checked' : '';
+                            
+                            tasksHtml += `
+                                <label class="flex items-center gap-2 cursor-pointer group p-2 hover:bg-indigo-50/50 rounded-lg transition-colors">
+                                    <input type="checkbox" class="checkbox-custom rounded text-indigo-600 focus:ring-indigo-500"
+                                        ${checkedAttr}
+                                        onchange="toggleTask('${subject}', '${chapter}', '${task}', this)">
+                                    <span class="text-sm text-gray-600 group-hover:text-indigo-900 transition-colors">${task}</span>
+                                </label>
+                            `;
+                        });
+
+                        chaptersHtml += `
+                            <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50/30 transition-colors">
+                                <div class="font-medium text-gray-800 md:w-1/3">${chapter}</div>
+                                <div class="flex flex-wrap md:flex-nowrap gap-x-6 gap-y-2 md:w-2/3 justify-start md:justify-end">
+                                    ${tasksHtml}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    chaptersHtml += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                chaptersHtml += '</div>';
+                container.innerHTML = headerHtml + chaptersHtml;
+            });
+            
+            // Init with Physics open
+            switchTab('Physics');
+            updateProgressBars();
+        }
+
+        // Tab Switching Logic
+        window.switchTab = function(subjectName) {
+            const tabs = ['Physics', 'Chemistry', 'Mathematics'];
+            
+            tabs.forEach(tab => {
+                // Update Button styling
+                const btn = document.getElementById(`tab-${tab}`);
+                if (tab === subjectName) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('text-gray-500', 'hover:text-gray-700', 'border-transparent', 'hover:border-gray-300');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('text-gray-500', 'hover:text-gray-700', 'border-transparent', 'hover:border-gray-300');
+                }
+                
+                // Update Content visibility
+                const content = document.getElementById(`content-${tab}`);
+                if (tab === subjectName) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        };
+
+        function showError(msg) {
+            const banner = document.getElementById('error-banner');
+            const msgEl = document.getElementById('error-message');
+            msgEl.textContent = msg;
+            banner.classList.remove('hidden');
+            setTimeout(() => { banner.classList.add('hidden'); }, 5000);
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        async function loadDataFromFirebase() {
+            if (!currentUserId || !db) return;
+            
+            try {
+                // Rule 1 strictly followed: artifacts/{appId}/users/{userId}/{collectionName}
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'progress');
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Merge saved data with base structure in case syllabus adds new items later
+                    userProgress = initEmptyProgress(); 
+                    
+                    if (data.progress) {
+                        for (const subject in data.progress) {
+                            for (const chapter in data.progress[subject]) {
+                                for (const task in data.progress[subject][chapter]) {
+                                    if (userProgress[subject] && userProgress[subject][chapter]) {
+                                        userProgress[subject][chapter][task] = data.progress[subject][chapter][task];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    userProgress = initEmptyProgress();
+                }
+                
+                renderSyllabus();
+                hideLoading();
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+                showError("Could not load your saved progress. Showing empty tracker.");
+                userProgress = initEmptyProgress();
+                renderSyllabus();
+                hideLoading();
+            }
+        }
+
+        // Debounced save to prevent excessive writes
+        function scheduleSave() {
+            if (syncTimeout) {
+                clearTimeout(syncTimeout);
+            }
+            syncTimeout = setTimeout(() => {
+                saveDataToFirebase();
+            }, 1000); // 1 second debounce
+        }
+
+        async function saveDataToFirebase() {
+            if (!currentUserId || !db) return;
+            
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'jee_data', 'progress');
+                await setDoc(docRef, {
+                    progress: userProgress,
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
+            } catch (error) {
+                console.error("Error saving data:", error);
+                showError("Failed to save progress to cloud. Changes are only local.");
+            }
+        }
+
+        // Initialize App
+        async function initialize() {
+            if (!firebaseConfig) {
+                console.warn("No Firebase config provided. Running in local-only mode.");
+                userProgress = initEmptyProgress();
+                renderSyllabus();
+                hideLoading();
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Authentication (Rule 3)
+                let user;
+                if (initialAuthToken) {
+                    const credential = await signInWithCustomToken(auth, initialAuthToken);
+                    user = credential.user;
+                } else {
+                    const credential = await signInAnonymously(auth);
+                    user = credential.user;
+                }
+                
+                currentUserId = user.uid;
+                await loadDataFromFirebase();
+                
+            } catch (error) {
+                console.error("Firebase init failed:", error);
+                showError("Could not connect to database. Operating in local mode.");
+                userProgress = initEmptyProgress();
+                renderSyllabus();
+                hideLoading();
+            }
+        }
+
+        // Boot
+        window.addEventListener('DOMContentLoaded', () => {
+            initialize();
+        });
+    </script>
+</body>
+</html>

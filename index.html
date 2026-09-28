@@ -327,10 +327,10 @@
                             <div class="mb-4">
                                 <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
                                     <span>Progress</span>
-                                    <span>${chDone}/${tasks.length}</span>
+                                    <span class="chapter-progress-text">${chDone}/${tasks.length}</span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                    <div class="${meta.bar} h-1.5 rounded-full transition-all duration-500" style="width: ${chPct}%"></div>
+                                    <div class="${meta.bar} h-1.5 rounded-full transition-all duration-500 chapter-progress-bar" style="width: ${chPct}%"></div>
                                 </div>
                             </div>
                             
@@ -395,12 +395,12 @@
             // Minimal DOM update for responsiveness
             const chDone = getChapterProgress(subj, chap);
             const card = el.closest('.rounded-2xl');
-            const progressText = card.querySelector('.text-xs.font-bold.text-gray-500 + span');
-            const progressBar = card.querySelector('.rounded-full > div');
+            const progressText = card.querySelector('.chapter-progress-text');
+            const progressBar = card.querySelector('.chapter-progress-bar');
             const labelSpan = el.nextElementSibling;
             
-            progressText.textContent = `${chDone}/${tasks.length}`;
-            progressBar.style.width = `${Math.round((chDone/tasks.length)*100)}%`;
+            if (progressText) progressText.textContent = `${chDone}/${tasks.length}`;
+            if (progressBar) progressBar.style.width = `${Math.round((chDone/tasks.length)*100)}%`;
             
             if(el.checked) {
                 labelSpan.classList.add('line-through', 'opacity-60');

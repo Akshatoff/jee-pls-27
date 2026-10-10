@@ -7,43 +7,81 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+        }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .checkbox-custom { accent-color: #4f46e5; width: 1.25rem; height: 1.25rem; cursor: pointer; transition: all 0.2s; }
-        .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600; }
-        .progress-stripe { background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem; }
+        .checkbox-custom { 
+            accent-color: #4f46e5; 
+            width: 1.25rem; 
+            height: 1.25rem; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        }
+        .tab-active { 
+            border-bottom: 2px solid #4f46e5; 
+            color: #4f46e5; 
+            font-weight: 600; 
+        }
+        .progress-stripe { 
+            background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); 
+            background-size: 1rem 1rem; 
+        }
+        /* Toast Animation */
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideInUp 0.3s ease-out forwards;
+        }
     </style>
 </head>
-<body class="min-h-screen text-gray-800 flex flex-col relative">
+<body class="min-h-screen text-gray-800 flex flex-col relative overflow-x-hidden">
 
     <header class="bg-white shadow-sm sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-600 p-2 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">JEE Tracker</h1>
                     </div>
-                    <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">JEE Tracker</h1>
-                    <div id="sync-status" class="hidden ml-4 text-xs font-semibold px-2 py-1 rounded-md flex items-center gap-1 transition-all shadow-sm"></div>
+                    
+                    <!-- Export / Import Sync Actions -->
+                    <div class="flex space-x-2 md:ml-6">
+                        <button onclick="exportData()" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md text-xs font-bold transition-colors flex items-center shadow-sm">
+                            <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Export
+                        </button>
+                        <label class="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-md text-xs font-bold transition-colors flex items-center cursor-pointer shadow-sm">
+                            <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Import
+                            <input type="file" accept=".json" class="hidden" onchange="importData(event)">
+                        </label>
+                    </div>
                 </div>
                 
                 <div class="flex gap-4 items-center w-full md:w-auto">
-                    <div class="flex-grow md:w-64">
+                    <div class="flex-grow md:w-48 hidden lg:block">
                         <div class="flex justify-between text-xs font-bold mb-1 text-gray-500 uppercase tracking-wide">
-                            <span>Total Completion</span>
+                            <span>Completion</span>
                             <span id="overall-progress-text" class="text-indigo-600">0%</span>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2.5 shadow-inner overflow-hidden">
-                            <div id="overall-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-700 ease-out progress-stripe" style="width: 0%"></div>
+                        <div class="w-full bg-gray-100 rounded-full h-2 shadow-inner overflow-hidden">
+                            <div id="overall-progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-700 ease-out progress-stripe" style="width: 0%"></div>
                         </div>
                     </div>
-                    <button onclick="suggestNextChapter()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-sm whitespace-nowrap flex items-center gap-2">
-                        <span>🎯 What to study now?</span>
+                    <button onclick="suggestNextChapter()" class="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-sm whitespace-nowrap flex items-center justify-center gap-2">
+                        <span>🎯 Suggest Next</span>
                     </button>
                 </div>
             </div>
@@ -68,6 +106,7 @@
         <div id="content-Daily" class="subject-content hidden"></div>
     </main>
 
+    <!-- Suggestion Modal -->
     <div id="suggestion-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm transition-opacity"></div>
         <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -87,28 +126,62 @@
                                     </div>
                                     <p id="modal-chapter-name" class="text-xl font-bold text-gray-800"></p>
                                     <div class="mt-3">
-                                        <p class="text-sm text-gray-600 font-medium mb-1">Missing Completion Tasks:</p>
+                                        <p class="text-sm text-gray-600 font-medium mb-1">Missing Tasks:</p>
                                         <div id="modal-missing-tasks" class="flex flex-wrap gap-2"></div>
                                     </div>
                                 </div>
-                                <p class="mt-4 text-sm text-gray-500">This recommendation is based on the highest priority incomplete topic across all subjects.</p>
                             </div>
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        <button type="button" onclick="closeModal()" class="inline-flex w-full justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto transition-colors">Let's go!</button>
+                        <button type="button" onclick="goToSuggestedChapter()" class="inline-flex w-full justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto transition-colors">Let's go!</button>
+                        <button type="button" onclick="closeModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-6 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors">Cancel</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Custom Toast Notification System -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
     <script>
-        const STORAGE_KEY = 'jee_ultimate_tracker_data_v2';
-        let syncTimeout;
+        const STORAGE_KEY = 'jee_ultimate_tracker_sync_v1';
+
+        // Custom Notification Function replacing standard alert()
+        function showNotification(title, message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 
+                           type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 
+                           'bg-blue-50 border-blue-200 text-blue-800';
+                           
+            const icon = type === 'success' ? `<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>` : 
+                         type === 'error' ? `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>` : 
+                         `<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+            toast.className = `flex items-start p-4 mb-2 border rounded-xl shadow-lg pointer-events-auto ${colors} toast-enter w-72`;
+            toast.innerHTML = `
+                <div class="flex-shrink-0 mt-0.5">${icon}</div>
+                <div class="ml-3 w-0 flex-1">
+                    <p class="text-sm font-bold">${title}</p>
+                    <p class="mt-1 text-xs opacity-90">${message}</p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 3.5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+            }, 3500);
+        }
 
         const tasks = ['Lecture', 'Module', 'DPP', 'PYQs', 'Revision'];
-        // P4 is removed completely as requested
         const prioritiesOrder = ['P1', 'P2', 'P3']; 
         
         const priorityMeta = {
@@ -121,7 +194,7 @@
             'Physics': {
                 'P1': ['Current Electricity', 'Electrostatics', 'Ray Optics', 'Modern Physics', 'Semiconductors', 'Moving Charges & Magnetism', 'EMI', 'AC', 'NLM', 'WEP', 'Rotation'],
                 'P2': ['Kinematics', 'Thermodynamics', 'SHM', 'Waves', 'Gravitation', 'COM/Collision', 'Fluids', 'Wave Optics', 'Units/Dimensions/Errors', 'KTG', 'Thermal Properties'],
-                'P3': ['Magnetism & Matter', 'EM Waves', 'Mechanical Properties of Solids', 'Elasticity', 'Experimental Physics', 'remaining smaller subtopics']
+                'P3': ['Magnetism & Matter', 'EM Waves', 'Mechanical Properties of Solids', 'Elasticity', 'Experimental Physics']
             },
             'Chemistry': {
                 'P1': ['Mole Concept', 'Chemical Bonding', 'GOC', 'Thermodynamics', 'Electrochemistry', 'Chemical Equilibrium', 'Ionic Equilibrium', 'Coordination Compounds', 'Carbonyl Compounds', 'Amines', 'Hydrocarbons'],
@@ -144,6 +217,8 @@
                 tasks: {}
             }
         };
+        
+        let currentSuggestion = null;
 
         function getEmptyState() {
             let state = { progress: {}, daily: { lastDate: new Date().toLocaleDateString(), tasks: {} } };
@@ -166,13 +241,13 @@
         }
 
         function loadData() {
-            try {
-                showSyncStatus('Loading...', 'text-gray-500');
-                const saved = localStorage.getItem(STORAGE_KEY);
-                appState = getEmptyState(); 
-                
-                if (saved) {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            appState = getEmptyState(); 
+            
+            if (saved) {
+                try {
                     const data = JSON.parse(saved);
+                    // Merge progress gracefully
                     if (data.progress) {
                         for (const s in data.progress) {
                             if (!appState.progress[s]) continue;
@@ -185,6 +260,7 @@
                         }
                     }
 
+                    // Handle Daily system resets based on current date
                     if (data.daily) {
                         const today = new Date().toLocaleDateString();
                         if (data.daily.lastDate === today) {
@@ -197,51 +273,73 @@
                                 }
                             }
                         } else {
+                            // Date changed, reset daily tasks
                             appState.daily.lastDate = today;
-                            scheduleSave(); 
+                            saveData(); 
                         }
                     }
+                } catch (e) {
+                    console.error("Data loading error, resetting to default.", e);
                 }
-                showSyncStatus('Loaded Locally', 'text-green-600');
-                setTimeout(hideSyncStatus, 2500);
-            } catch (err) {
-                console.error(err);
-                showSyncStatus('Load Error', 'text-red-500');
             }
-        }
-
-        function scheduleSave() {
-            if (syncTimeout) clearTimeout(syncTimeout);
-            showSyncStatus('Saving...', 'text-indigo-600', true);
-            syncTimeout = setTimeout(saveData, 500);
         }
 
         function saveData() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-                showSyncStatus('Saved Locally', 'text-green-600');
-                setTimeout(hideSyncStatus, 2500);
             } catch (err) { 
                 console.error("Save error:", err); 
-                showSyncStatus('Save Failed', 'text-red-500');
             }
         }
 
-        function showSyncStatus(msg, colorClass, spinner = false) {
-            const el = document.getElementById('sync-status');
-            if (el) {
-                el.classList.remove('hidden');
-                el.className = `ml-4 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all ${colorClass} bg-white border border-gray-200 shadow-sm`;
-                el.innerHTML = spinner 
-                    ? `<svg class="animate-spin h-3.5 w-3.5 ${colorClass}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ${msg}`
-                    : msg;
+        // Feature: Zero-Backend Export Sync
+        window.exportData = function() {
+            try {
+                const data = JSON.stringify(appState);
+                const blob = new Blob([data], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `JEE_Tracker_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification("Export Successful", "Your progress backup has been downloaded.");
+            } catch (error) {
+                showNotification("Export Failed", "Could not create backup file.", "error");
             }
-        }
+        };
 
-        function hideSyncStatus() {
-            const el = document.getElementById('sync-status');
-            if (el) el.classList.add('hidden');
-        }
+        // Feature: Zero-Backend Import Sync
+        window.importData = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (importedData.progress && importedData.daily) {
+                        appState = importedData;
+                        saveData();
+                        loadData(); // Re-validate data structures
+                        renderAll();
+                        showNotification("Import Successful", "Your progress has been synced from the file!");
+                    } else {
+                        throw new Error("Invalid format");
+                    }
+                } catch (error) {
+                    showNotification("Import Failed", "Please ensure you selected a valid JEE Tracker backup JSON file.", "error");
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        };
 
         function calculateStats() {
             let total = 0, done = 0;
@@ -273,6 +371,10 @@
             tasks.forEach(t => { if(appState.progress[subj][chap][t]) chDone++; });
             return chDone;
         }
+        
+        function getSafeId(name) {
+            return name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        }
 
         function renderSubject(subj) {
             const container = document.getElementById(`content-${subj}`);
@@ -289,6 +391,7 @@
                     const chPct = Math.round((chDone / tasks.length) * 100);
                     const isComplete = chDone === tasks.length;
                     const cardBg = isComplete ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md';
+                    const safeId = `card-${getSafeId(subj)}-${getSafeId(chap)}`;
 
                     let tasksHtml = '';
                     tasks.forEach(t => {
@@ -302,7 +405,7 @@
                     });
 
                     html += `
-                        <div class="${cardBg} rounded-2xl p-5 border transition-all duration-300 flex flex-col">
+                        <div id="${safeId}" class="${cardBg} rounded-2xl p-5 border transition-all duration-300 flex flex-col scroll-mt-24">
                             <div class="flex justify-between items-start mb-3 gap-2">
                                 <h3 class="font-bold text-gray-900 text-lg leading-tight flex-grow">${chap}</h3>
                                 <span class="whitespace-nowrap px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${meta.colors}">${prio}</span>
@@ -313,7 +416,7 @@
                                     <span>Progress</span>
                                     <span class="chapter-progress-text">${chDone}/${tasks.length}</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                     <div class="${meta.bar} h-1.5 rounded-full transition-all duration-500 chapter-progress-bar" style="width: ${chPct}%"></div>
                                 </div>
                             </div>
@@ -351,8 +454,8 @@
             container.innerHTML = `
                 <div class="max-w-2xl mx-auto">
                     <div class="text-center mb-8">
-                        <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Daily Consistency</h2>
-                        <p class="text-gray-500 font-medium">These tasks reset automatically every midnight. Date: ${appState.daily.lastDate}</p>
+                        <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Daily Consistency System</h2>
+                        <p class="text-gray-500 font-medium bg-gray-100 inline-block px-3 py-1 rounded-full text-sm">Resets automatically at midnight. Today: ${appState.daily.lastDate}</p>
                     </div>
                     
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -360,7 +463,7 @@
                             <span class="text-sm font-bold text-gray-500 uppercase">Today's Goals</span>
                             <span class="text-indigo-600 font-bold">${dDone}/${dTotal} Done</span>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-3 mb-6">
+                        <div class="w-full bg-gray-100 rounded-full h-3 mb-6 overflow-hidden">
                             <div class="bg-indigo-500 h-3 rounded-full transition-all duration-500" style="width: ${(dDone/dTotal)*100}%"></div>
                         </div>
                         ${tasksHtml}
@@ -371,7 +474,9 @@
 
         window.toggleTask = function(subj, chap, task, el) {
             appState.progress[subj][chap][task] = el.checked;
+            saveData();
             
+            // DOM manipulation for instant feedback without full re-render
             const chDone = getChapterProgress(subj, chap);
             const card = el.closest('.rounded-2xl');
             const progressText = card.querySelector('.chapter-progress-text');
@@ -396,14 +501,12 @@
             const stats = calculateStats();
             document.getElementById('overall-progress-bar').style.width = `${stats.pct}%`;
             document.getElementById('overall-progress-text').textContent = `${stats.pct}%`;
-
-            scheduleSave();
         };
 
         window.toggleDaily = function(task, el) {
             appState.daily.tasks[task] = el.checked;
+            saveData();
             renderDaily(); 
-            scheduleSave();
         };
 
         window.switchTab = function(tabName) {
@@ -424,9 +527,10 @@
         };
 
         window.suggestNextChapter = function() {
-            let suggested = null;
+            currentSuggestion = null;
             const subjects = ['Physics', 'Chemistry', 'Mathematics'];
             
+            // Logic: Scan P1 first across all subjects, then P2, then P3
             for (const prio of prioritiesOrder) {
                 for (const subj of subjects) {
                     if (!syllabus[subj][prio]) continue;
@@ -435,24 +539,24 @@
                         const chDone = getChapterProgress(subj, chap);
                         if (chDone < tasks.length) {
                             const missing = tasks.filter(t => !appState.progress[subj][chap][t]);
-                            suggested = { subj, prio, chap, missing };
+                            currentSuggestion = { subj, prio, chap, missing };
                             break; 
                         }
                     }
-                    if (suggested) break; 
+                    if (currentSuggestion) break; 
                 }
-                if (suggested) break; 
+                if (currentSuggestion) break; 
             }
 
-            if (suggested) {
-                const meta = priorityMeta[suggested.prio];
+            if (currentSuggestion) {
+                const meta = priorityMeta[currentSuggestion.prio];
                 document.getElementById('modal-priority-badge').className = `px-2.5 py-0.5 rounded text-xs font-bold shadow-sm ${meta.colors}`;
-                document.getElementById('modal-priority-badge').textContent = suggested.prio;
-                document.getElementById('modal-subject').textContent = suggested.subj;
-                document.getElementById('modal-chapter-name').textContent = suggested.chap;
+                document.getElementById('modal-priority-badge').textContent = currentSuggestion.prio;
+                document.getElementById('modal-subject').textContent = currentSuggestion.subj;
+                document.getElementById('modal-chapter-name').textContent = currentSuggestion.chap;
                 
-                const missingHtml = suggested.missing.map(m => 
-                    `<span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                const missingHtml = currentSuggestion.missing.map(m => 
+                    `<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                         Pending: ${m}
                     </span>`
                 ).join('');
@@ -460,14 +564,36 @@
                 
                 document.getElementById('suggestion-modal').classList.remove('hidden');
             } else {
-                alert("Amazing! You have completed the entire syllabus tracking!");
+                showNotification("Incredible Job!", "You have completed the entire syllabus!", "success");
             }
+        };
+        
+        window.goToSuggestedChapter = function() {
+            if (!currentSuggestion) return;
+            
+            closeModal();
+            switchTab(currentSuggestion.subj);
+            
+            // Small delay to allow tab render/display to complete before scrolling
+            setTimeout(() => {
+                const safeId = `card-${getSafeId(currentSuggestion.subj)}-${getSafeId(currentSuggestion.chap)}`;
+                const cardElement = document.getElementById(safeId);
+                if (cardElement) {
+                    cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Highlight effect
+                    cardElement.classList.add('ring-4', 'ring-indigo-300', 'shadow-xl');
+                    setTimeout(() => {
+                        cardElement.classList.remove('ring-4', 'ring-indigo-300', 'shadow-xl');
+                    }, 2000);
+                }
+            }, 50);
         };
 
         window.closeModal = function() {
             document.getElementById('suggestion-modal').classList.add('hidden');
         };
 
+        // Bootstrap application
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>

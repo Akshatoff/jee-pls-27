@@ -62,15 +62,6 @@
     </header>
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <!-- Error Banner -->
-        <div id="error-banner" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg" role="alert">
-            <div class="flex">
-                <div class="flex-shrink-0"><svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg></div>
-                <div class="ml-3"><p class="text-sm text-red-700 font-medium" id="error-message"></p></div>
-            </div>
-        </div>
-
-        <!-- Subject/Daily Containers -->
         <div id="content-Physics" class="subject-content hidden"></div>
         <div id="content-Chemistry" class="subject-content hidden"></div>
         <div id="content-Mathematics" class="subject-content hidden"></div>
@@ -113,35 +104,34 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'jee_ultimate_tracker_data';
+        const STORAGE_KEY = 'jee_ultimate_tracker_data_v2';
         let syncTimeout;
 
         const tasks = ['Lecture', 'Module', 'DPP', 'PYQs', 'Revision'];
-        const prioritiesOrder = ['P1', 'P2', 'P3', 'P4'];
+        // P4 is removed completely as requested
+        const prioritiesOrder = ['P1', 'P2', 'P3']; 
         
         const priorityMeta = {
             'P1': { label: '🔴 P1 — Must Master', colors: 'bg-red-50 text-red-700 border-red-200', bar: 'bg-red-500' },
             'P2': { label: '🟠 P2 — High Priority', colors: 'bg-orange-50 text-orange-700 border-orange-200', bar: 'bg-orange-500' },
-            'P3': { label: '🟡 P3 — Complete After', colors: 'bg-yellow-50 text-yellow-700 border-yellow-200', bar: 'bg-yellow-500' },
-            'P4': { label: '🟢 P4 — Quick Finish', colors: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' }
+            'P3': { label: '🟡 P3 — Complete After', colors: 'bg-yellow-50 text-yellow-700 border-yellow-200', bar: 'bg-yellow-500' }
         };
 
         const syllabus = {
             'Physics': {
                 'P1': ['Current Electricity', 'Electrostatics', 'Ray Optics', 'Modern Physics', 'Semiconductors', 'Moving Charges & Magnetism', 'EMI', 'AC', 'NLM', 'WEP', 'Rotation'],
                 'P2': ['Kinematics', 'Thermodynamics', 'SHM', 'Waves', 'Gravitation', 'COM/Collision', 'Fluids', 'Wave Optics', 'Units/Dimensions/Errors', 'KTG', 'Thermal Properties'],
-                'P3': ['Magnetism & Matter', 'EM Waves', 'Mechanical Properties of Solids', 'Elasticity', 'Experimental Physics']
+                'P3': ['Magnetism & Matter', 'EM Waves', 'Mechanical Properties of Solids', 'Elasticity', 'Experimental Physics', 'remaining smaller subtopics']
             },
             'Chemistry': {
                 'P1': ['Mole Concept', 'Chemical Bonding', 'GOC', 'Thermodynamics', 'Electrochemistry', 'Chemical Equilibrium', 'Ionic Equilibrium', 'Coordination Compounds', 'Carbonyl Compounds', 'Amines', 'Hydrocarbons'],
                 'P2': ['Solutions', 'Chemical Kinetics', 'Haloalkanes/Haloarenes', 'Alcohols/Phenols/Ethers', 'Periodic Table', 'p-Block', 'd/f Block', 'Atomic Structure', 'Redox'],
-                'P3': ['States of Matter', 'Surface Chemistry', 'Biomolecules', 'Metallurgy', 'Qualitative Analysis', 'Practical Chemistry'],
-                'P4': ['Polymers', 'Chemistry in Everyday Life', 'Environmental Chemistry', 'Hydrogen', 's-Block']
+                'P3': ['Biomolecules', 'Qualitative Analysis', 'Practical Chemistry']
             },
             'Mathematics': {
                 'P1': ['Quadratic Equations', 'Sequence & Series', 'Matrices', 'Determinants', 'Straight Lines', 'Circle', 'Vector Algebra', '3D Geometry', 'Limits', 'Continuity & Differentiability', 'Application of Derivatives', 'Integration', 'Differential Equations', 'Probability'],
                 'P2': ['Functions', 'Trigonometry', 'Complex Numbers', 'P&C', 'Binomial', 'Statistics', 'Parabola', 'Ellipse', 'Hyperbola', 'Area Under Curves'],
-                'P3': ['Sets & Relations', 'Inverse Trigonometry', 'Mathematical Reasoning', 'Mathematical Induction', 'Linear Programming']
+                'P3': ['Sets & Relations', 'Inverse Trigonometry', 'Linear Programming']
             }
         };
 
@@ -157,7 +147,6 @@
 
         function getEmptyState() {
             let state = { progress: {}, daily: { lastDate: new Date().toLocaleDateString(), tasks: {} } };
-            // Init Syllabus
             for (const subj in syllabus) {
                 state.progress[subj] = {};
                 for (const prio in syllabus[subj]) {
@@ -167,7 +156,6 @@
                     });
                 }
             }
-            // Init Daily
             defaultDailyTasks.forEach(task => { state.daily.tasks[task] = false; });
             return state;
         }
@@ -185,8 +173,6 @@
                 
                 if (saved) {
                     const data = JSON.parse(saved);
-                    
-                    // Merge Progress
                     if (data.progress) {
                         for (const s in data.progress) {
                             if (!appState.progress[s]) continue;
@@ -199,7 +185,6 @@
                         }
                     }
 
-                    // Merge & Check Daily
                     if (data.daily) {
                         const today = new Date().toLocaleDateString();
                         if (data.daily.lastDate === today) {
@@ -212,7 +197,6 @@
                                 }
                             }
                         } else {
-                            // Date mismatch -> Reset happens natively by keeping getEmptyState() daily values (all false)
                             appState.daily.lastDate = today;
                             scheduleSave(); 
                         }
@@ -281,7 +265,7 @@
 
             ['Physics', 'Chemistry', 'Mathematics'].forEach(renderSubject);
             renderDaily();
-            switchTab('Physics'); // default
+            switchTab('Physics'); 
         }
 
         function getChapterProgress(subj, chap) {
@@ -381,10 +365,6 @@
                         </div>
                         ${tasksHtml}
                     </div>
-                    
-                    <div class="text-center text-sm text-gray-400">
-                        <p>"Success is the sum of small efforts, repeated day in and day out."</p>
-                    </div>
                 </div>
             `;
         }
@@ -392,7 +372,6 @@
         window.toggleTask = function(subj, chap, task, el) {
             appState.progress[subj][chap][task] = el.checked;
             
-            // Minimal DOM update for responsiveness
             const chDone = getChapterProgress(subj, chap);
             const card = el.closest('.rounded-2xl');
             const progressText = card.querySelector('.chapter-progress-text');
@@ -446,8 +425,6 @@
 
         window.suggestNextChapter = function() {
             let suggested = null;
-
-            // Algorithm: Loop P1 -> P4, then subjects
             const subjects = ['Physics', 'Chemistry', 'Mathematics'];
             
             for (const prio of prioritiesOrder) {
@@ -491,7 +468,6 @@
             document.getElementById('suggestion-modal').classList.add('hidden');
         };
 
-        // Initialize immediately when DOM is ready
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>

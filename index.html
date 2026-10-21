@@ -54,6 +54,7 @@
                             <div id="overall-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-700 ease-out progress-stripe" style="width: 0%"></div>
                         </div>
                     </div>
+                    <button onclick="editExamDate()" id="exam-chip" class="text-xs font-bold px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap transition-colors"></button>
                     <button onclick="suggestNextChapter()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-sm whitespace-nowrap flex items-center gap-2">
                         <span>🎯 Suggest Next</span>
                     </button>
@@ -109,6 +110,10 @@
                                         <div id="modal-missing-tasks" class="flex flex-wrap gap-2"></div>
                                     </div>
                                 </div>
+                                <div id="modal-due-wrap" class="hidden">
+                                    <h4 id="modal-due-title" class="mt-5 mb-2 text-xs font-bold uppercase tracking-wide text-red-600">Due for revision</h4>
+                                    <div id="modal-due-list" class="space-y-2"></div>
+                                </div>
                                 <h4 class="mt-5 mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">Subject recommendations</h4>
                                 <div id="modal-subject-recs" class="space-y-2"></div>
                                 <p class="mt-4 text-xs text-gray-500"><span id="modal-formula-note"></span></p>
@@ -126,18 +131,19 @@
     <script>
         const STORAGE_KEY = 'jee_ultimate_tracker_v3';
         let syncTimeout;
+        let currentTab = 'Physics';
 
-        // DPP Removed.
-        const tasks = ['Lecture', 'Module', 'PYQs', 'Revision'];
-        const prioritiesOrder = ['P1', 'P2', 'P3']; 
-        
+        // Module removed. Lecture is a one-time task; PYQs + Revision are SPACED (they auto-uncheck when due).
+        const tasks = ['Lecture', 'PYQs', 'Revision'];
+        const SPACED_TASKS = ['PYQs', 'Revision'];
+        const prioritiesOrder = ['P1', 'P2', 'P3'];
+
         const priorityMeta = {
             'P1': { label: '🔴 P1 — Must Master', colors: 'bg-red-50 text-red-700 border-red-200', bar: 'bg-red-500' },
             'P2': { label: '🟠 P2 — High Priority', colors: 'bg-orange-50 text-orange-700 border-orange-200', bar: 'bg-orange-500' },
             'P3': { label: '🟡 P3 — Complete After', colors: 'bg-yellow-50 text-yellow-700 border-yellow-200', bar: 'bg-yellow-500' }
         };
 
-        // Filtered Syllabus based on latest requirements
         const syllabus = {
             'Physics': {
                 'P1': ['Current Electricity', 'Electrostatics', 'Ray Optics', 'Modern Physics', 'Semiconductors', 'Moving Charges & Magnetism', 'EMI', 'AC', 'NLM', 'WEP', 'Rotation'],
@@ -158,16 +164,155 @@
 
         const defaultDailyTasks = ['Solve 50 PYQs', 'Revise Short Notes', 'Read NCERT 30 mins', 'Mock Test / Analysis'];
 
-        let appState = {
-            progress: {},
-            daily: {
-                lastDate: new Date().toLocaleDateString(),
-                tasks: {}
-            }
+        // ===================== SPACED REVISION ENGINE START =====================
+        // How it works
+        //  • Every time you tick PYQs or Revision, that completion is "pass N" for that task.
+        //  • The app schedules when that pass expires: next due = today + gap(N) days, where
+        //        gap(N)  = baseGaps[N-1] (last value repeats) × priority multiplier
+        //  • The gap is then made EXAM-AWARE (JEE date is set in the header):
+        //        – never longer than half the days left (so a late pass still gets another revisit),
+        //        – never scheduled later than (exam − finalBufferDays),
+        //        – no more scheduling in the last finalBufferDays.
+        //  • When the due day arrives, the box AUTO-UNTICKS and the chapter returns to the
+        //    suggestion queue with a higher urgency (due → ×1.2, 3+ days overdue → ×1.4).
+        //
+        // With 90 days left and P2 (×1.0), gaps 5/12/25/40 → reviews on ~day 5, 17, 42, 82.
+        // P1 (×0.8): ~day 4, 14, 34, 66.   P3 (×1.3): ~day 7, 23, 55.
+        const SPACING_CONFIG = {
+            baseGaps: [5, 12, 25, 40],
+            priorityMultiplier: { 'P1': 0.8, 'P2': 1.0, 'P3': 1.3 },
+            finalBufferDays: 2,
+            defaultExamOffsetDays: 90,
+            overdueAfterDays: 3
         };
 
+        const DAY_MS = 86400000;
+        function startOfDay(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); }
+        function addDays(ts, n) { const d = new Date(ts); d.setDate(d.getDate() + n); d.setHours(0, 0, 0, 0); return d.getTime(); }
+        function dayDiff(a, b) { return Math.round((startOfDay(a) - startOfDay(b)) / DAY_MS); }
+        function toISODate(ts) {
+            const d = new Date(ts);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        function parseISODate(s) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+            if (!m) return null;
+            const d = new Date(+m[1], +m[2] - 1, +m[3]);
+            return isNaN(d.getTime()) ? null : d.getTime();
+        }
+        function getExamTs() {
+            return parseISODate(appState.examDate) ?? addDays(Date.now(), SPACING_CONFIG.defaultExamOffsetDays);
+        }
+        function getDaysLeft() { return dayDiff(getExamTs(), Date.now()); }
+
+        // Returns the timestamp when a task completed NOW (as pass `level`) should come due, or null for "no more reviews".
+        function computeNextDue(prio, level, now = Date.now()) {
+            const C = SPACING_CONFIG;
+            const today = startOfDay(now);
+            const exam = getExamTs();
+            const latest = addDays(exam, -C.finalBufferDays);
+            if (latest <= today) return null; // inside the final stretch: no further scheduling
+
+            const gaps = C.baseGaps;
+            const base = gaps[Math.min(Math.max(level, 1) - 1, gaps.length - 1)];
+            const mult = C.priorityMultiplier[prio] ?? 1;
+            let gap = Math.max(2, Math.round(base * mult));
+            const daysLeft = dayDiff(exam, now);
+            gap = Math.min(gap, Math.max(2, Math.floor(daysLeft / 2)));
+
+            let due = addDays(today, gap);
+            if (due > latest) due = latest;
+            if (due <= today) due = addDays(today, 1);
+            return due;
+        }
+
+        function getSpacedRec(subj, chap, task) {
+            if (!appState.spaced[subj]) appState.spaced[subj] = {};
+            if (!appState.spaced[subj][chap]) appState.spaced[subj][chap] = {};
+            if (!appState.spaced[subj][chap][task]) appState.spaced[subj][chap][task] = { level: 0, doneAt: null, dueAt: null };
+            return appState.spaced[subj][chap][task];
+        }
+
+        // Ticking a spaced task starts a new pass. The previous record is kept so an accidental tick can be undone.
+        function startPass(subj, chap, task) {
+            const rec = getSpacedRec(subj, chap, task);
+            rec.prev = { level: rec.level, doneAt: rec.doneAt, dueAt: rec.dueAt };
+            const now = Date.now();
+            rec.level = (rec.level || 0) + 1;
+            rec.doneAt = now;
+            rec.dueAt = computeNextDue(getChapterPriority(subj, chap), rec.level, now);
+        }
+
+        // Manually unticking = undo the last tick (restores what the schedule was before it).
+        function undoPass(subj, chap, task) {
+            const rec = getSpacedRec(subj, chap, task);
+            if (rec.prev) {
+                rec.level = rec.prev.level; rec.doneAt = rec.prev.doneAt; rec.dueAt = rec.prev.dueAt;
+                delete rec.prev;
+            }
+        }
+
+        // A task is "due" when it was done before, its schedule has expired, and it is currently unticked.
+        function getTaskDueDays(subj, chap, task) {
+            if (!SPACED_TASKS.includes(task)) return null;
+            if (appState.progress[subj][chap][task]) return null;
+            const rec = appState.spaced[subj] && appState.spaced[subj][chap] && appState.spaced[subj][chap][task];
+            if (!rec || !(rec.level > 0) || !rec.dueAt) return null;
+            const late = dayDiff(Date.now(), rec.dueAt);
+            return late >= 0 ? late : null; // days overdue (0 = became due today)
+        }
+
+        // Auto-untick everything whose time has come. Returns true if anything changed.
+        function processDueRevisions() {
+            const now = Date.now();
+            let changed = false;
+            for (const subj in appState.spaced) {
+                for (const chap in appState.spaced[subj]) {
+                    SPACED_TASKS.forEach(task => {
+                        const rec = appState.spaced[subj][chap][task];
+                        if (!rec || !rec.dueAt) return;
+                        if (appState.progress[subj] && appState.progress[subj][chap] && appState.progress[subj][chap][task] && now >= rec.dueAt) {
+                            appState.progress[subj][chap][task] = false;
+                            delete rec.prev; // a lapsed pass can't be "undone"
+                            changed = true;
+                        }
+                    });
+                }
+            }
+            return changed;
+        }
+
+        // Summary of what is due in a chapter (used by cards, urgency and the suggestion popup).
+        function getChapterDueInfo(subj, chap) {
+            const dueTasks = [];
+            let worst = -1, level = 0;
+            SPACED_TASKS.forEach(t => {
+                const d = getTaskDueDays(subj, chap, t);
+                if (d !== null) {
+                    dueTasks.push({ task: t, daysLate: d });
+                    worst = Math.max(worst, d);
+                    level = Math.max(level, (appState.spaced[subj][chap][t].level || 0) + 1);
+                }
+            });
+            const status = worst < 0 ? 'normal' : (worst >= SPACING_CONFIG.overdueAfterDays ? 'overdue' : 'due');
+            return { status, dueTasks, worstDaysLate: worst, nextPass: level };
+        }
+
+        function describeLate(d) { return d <= 0 ? 'due today' : `${d}d overdue`; }
+        function describeIn(ts) {
+            const n = dayDiff(ts, Date.now());
+            return n <= 1 ? 'tomorrow' : `in ${n}d`;
+        }
+        // ====================== SPACED REVISION ENGINE END ======================
+
+        let appState = { progress: {}, spaced: {}, examDate: null, daily: { lastDate: new Date().toLocaleDateString(), tasks: {} } };
+
         function getEmptyState() {
-            let state = { progress: {}, daily: { lastDate: new Date().toLocaleDateString(), tasks: {} } };
+            let state = {
+                progress: {}, spaced: {},
+                examDate: toISODate(addDays(Date.now(), SPACING_CONFIG.defaultExamOffsetDays)),
+                daily: { lastDate: new Date().toLocaleDateString(), tasks: {} }
+            };
             for (const subj in syllabus) {
                 state.progress[subj] = {};
                 for (const prio in syllabus[subj]) {
@@ -184,28 +329,76 @@
         function initApp() {
             loadData();
             renderAll();
+            // Check for due revisions every minute and whenever you come back to the tab.
+            setInterval(refreshDue, 60000);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDue(); });
+        }
+
+        function refreshDue() {
+            if (processDueRevisions()) { scheduleSave(); renderAll(); }
+            else { updateExamChip(); }
         }
 
         function loadData() {
             try {
                 showSyncStatus('Loading...', 'text-gray-500');
                 const saved = localStorage.getItem(STORAGE_KEY);
-                appState = getEmptyState(); 
-                
+                appState = getEmptyState();
+                let needsSave = false;
+
                 if (saved) {
                     const data = JSON.parse(saved);
+                    if (data.examDate && parseISODate(data.examDate) !== null) appState.examDate = data.examDate;
+                    else needsSave = true;
+
                     if (data.progress) {
                         for (const s in data.progress) {
                             if (!appState.progress[s]) continue;
                             for (const c in data.progress[s]) {
                                 if (!appState.progress[s][c]) continue;
                                 for (const t in data.progress[s][c]) {
-                                    // Handle cases where older tasks (like DPP) might be in old save data
-                                    if(appState.progress[s][c][t] !== undefined) {
+                                    // Old tasks (Module, DPP) are silently dropped.
+                                    if (appState.progress[s][c][t] !== undefined) {
                                         appState.progress[s][c][t] = !!data.progress[s][c][t];
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if (data.spaced) {
+                        for (const s in data.spaced) {
+                            if (!appState.progress[s]) continue;
+                            for (const c in data.spaced[s]) {
+                                if (!appState.progress[s][c]) continue;
+                                SPACED_TASKS.forEach(t => {
+                                    const r = data.spaced[s][c][t];
+                                    if (r && typeof r === 'object') {
+                                        const rec = getSpacedRec(s, c, t);
+                                        rec.level = Number.isFinite(r.level) ? r.level : 0;
+                                        rec.doneAt = Number.isFinite(r.doneAt) ? r.doneAt : null;
+                                        rec.dueAt = Number.isFinite(r.dueAt) ? r.dueAt : null;
+                                        if (r.prev && typeof r.prev === 'object') rec.prev = r.prev;
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // Migration: boxes ticked in the older version have no schedule yet.
+                    // Treat them as "completed today" so their spaced clock starts now.
+                    for (const s in appState.progress) {
+                        for (const c in appState.progress[s]) {
+                            SPACED_TASKS.forEach(t => {
+                                if (appState.progress[s][c][t]) {
+                                    const rec = getSpacedRec(s, c, t);
+                                    if (!(rec.level > 0)) {
+                                        rec.level = 1; rec.doneAt = Date.now();
+                                        rec.dueAt = computeNextDue(getChapterPriority(s, c), 1);
+                                        needsSave = true;
+                                    }
+                                }
+                            });
                         }
                     }
 
@@ -222,10 +415,13 @@
                             }
                         } else {
                             appState.daily.lastDate = today;
-                            scheduleSave(); 
+                            needsSave = true;
                         }
                     }
                 }
+
+                if (processDueRevisions()) needsSave = true;
+                if (needsSave || !saved) scheduleSave();
                 showSyncStatus('Loaded Locally', 'text-green-600');
                 setTimeout(hideSyncStatus, 2500);
             } catch (err) {
@@ -245,14 +441,14 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
                 showSyncStatus('Saved Locally', 'text-green-600');
                 setTimeout(hideSyncStatus, 2500);
-            } catch (err) { 
-                console.error("Save error:", err); 
+            } catch (err) {
+                console.error("Save error:", err);
                 showSyncStatus('Save Failed', 'text-red-500');
             }
         }
 
         function exportProgress() {
-            const data = localStorage.getItem(STORAGE_KEY) || JSON.stringify(appState);
+            const data = JSON.stringify(appState);
             const blob = new Blob([data], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -274,7 +470,7 @@
                     const importedData = JSON.parse(e.target.result);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(importedData));
                     alert("Progress imported successfully! The page will now reload.");
-                    location.reload(); 
+                    location.reload();
                 } catch (error) {
                     alert("Error importing file. Please make sure it is a valid JSON backup file.");
                     console.error(error);
@@ -289,7 +485,7 @@
             if (el) {
                 el.classList.remove('hidden');
                 el.className = `ml-2 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 transition-all ${colorClass} bg-white border border-gray-200 shadow-sm`;
-                el.innerHTML = spinner 
+                el.innerHTML = spinner
                     ? `<svg class="animate-spin h-3.5 w-3.5 ${colorClass}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ${msg}`
                     : msg;
             }
@@ -315,14 +511,38 @@
             return { total, done, pct: total > 0 ? Math.round((done/total)*100) : 0 };
         }
 
-        function renderAll() {
+        function updateOverall() {
             const stats = calculateStats();
             document.getElementById('overall-progress-bar').style.width = `${stats.pct}%`;
             document.getElementById('overall-progress-text').textContent = `${stats.pct}%`;
+            updateExamChip();
+        }
 
+        function updateExamChip() {
+            const el = document.getElementById('exam-chip');
+            if (!el) return;
+            const d = getDaysLeft();
+            const dueCount = getAllChapters().filter(c => getChapterDueInfo(c.subj, c.chap).status !== 'normal').length;
+            el.innerHTML = `📆 ${d > 0 ? d + 'd left' : (d === 0 ? 'Exam day' : 'Exam over')}` +
+                (dueCount ? ` <span class="ml-1 px-1.5 py-0.5 rounded bg-red-100 text-red-700">${dueCount} to revise</span>` : '');
+            el.title = `JEE date: ${appState.examDate} (click to change)`;
+        }
+
+        window.editExamDate = function() {
+            const v = prompt('Enter your JEE exam date (YYYY-MM-DD):', appState.examDate);
+            if (v === null) return;
+            if (parseISODate(v.trim()) === null) { alert('Invalid date. Use the format YYYY-MM-DD.'); return; }
+            appState.examDate = v.trim();
+            scheduleSave();
+            updateExamChip();
+            alert('Exam date updated. New revision gaps will use it from your next tick onwards.');
+        };
+
+        function renderAll() {
+            updateOverall();
             ['Physics', 'Chemistry', 'Mathematics'].forEach(renderSubject);
             renderDaily();
-            switchTab('Physics'); 
+            switchTab(currentTab);
         }
 
         function getChapterProgress(subj, chap) {
@@ -331,21 +551,39 @@
             return chDone;
         }
 
+        function getTaskStatusHtml(subj, chap, task) {
+            if (!SPACED_TASKS.includes(task)) return '';
+            const rec = appState.spaced[subj] && appState.spaced[subj][chap] && appState.spaced[subj][chap][task];
+            if (!rec || !(rec.level > 0)) return '';
+            const late = getTaskDueDays(subj, chap, task);
+            if (late !== null) {
+                const cls = late >= SPACING_CONFIG.overdueAfterDays ? 'text-red-600' : 'text-orange-600';
+                return `<span class="ml-auto text-[11px] font-semibold ${cls}">⏰ ${describeLate(late)} · pass ${rec.level + 1}</span>`;
+            }
+            if (appState.progress[subj][chap][task]) {
+                return `<span class="ml-auto text-[11px] font-medium text-gray-400">pass ${rec.level} · ${rec.dueAt ? 'again ' + describeIn(rec.dueAt) : 'final'}</span>`;
+            }
+            return '';
+        }
+
         function renderSubject(subj) {
             const container = document.getElementById(`content-${subj}`);
             let html = `<div class="mb-8"><h2 class="text-3xl font-extrabold text-gray-900 tracking-tight">${subj}</h2></div>`;
-            
+
             html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
 
             prioritiesOrder.forEach(prio => {
                 if (!syllabus[subj][prio]) return;
-                
+
                 syllabus[subj][prio].forEach(chap => {
                     const meta = priorityMeta[prio];
                     const chDone = getChapterProgress(subj, chap);
                     const chPct = Math.round((chDone / tasks.length) * 100);
                     const isComplete = chDone === tasks.length;
-                    const cardBg = isComplete ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md';
+                    const due = getChapterDueInfo(subj, chap);
+                    const cardBg = due.status !== 'normal'
+                        ? 'bg-white border-red-300 ring-1 ring-red-100 hover:shadow-md'
+                        : (isComplete ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md');
 
                     let tasksHtml = '';
                     tasks.forEach(t => {
@@ -354,6 +592,7 @@
                             <label class="flex items-center gap-2.5 p-1.5 hover:bg-gray-100 rounded-md cursor-pointer group transition-colors">
                                 <input type="checkbox" class="checkbox-custom rounded" ${checked} onchange="toggleTask('${subj}','${chap}','${t}',this)">
                                 <span class="text-sm font-medium text-gray-600 group-hover:text-gray-900 ${checked ? 'line-through opacity-60' : ''}">${t}</span>
+                                ${getTaskStatusHtml(subj, chap, t)}
                             </label>
                         `;
                     });
@@ -364,7 +603,7 @@
                                 <h3 class="font-bold text-gray-900 text-lg leading-tight flex-grow">${chap}</h3>
                                 <span class="whitespace-nowrap px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${meta.colors}">${prio}</span>
                             </div>
-                            
+
                             <div class="mb-4">
                                 <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
                                     <span>Progress</span>
@@ -375,8 +614,8 @@
                                 </div>
                                 <div class="chapter-urgency-text mt-1.5 text-[11px] font-semibold text-indigo-500">${getUrgencyLabel({ subj, chap, prio })}</div>
                             </div>
-                            
-                            <div class="mt-auto grid grid-cols-2 gap-x-2 gap-y-1 pt-3 border-t border-gray-100">
+
+                            <div class="mt-auto grid grid-cols-1 gap-y-1 pt-3 border-t border-gray-100">
                                 ${tasksHtml}
                             </div>
                         </div>
@@ -396,7 +635,7 @@
             for (const t in appState.daily.tasks) {
                 const checked = appState.daily.tasks[t];
                 if (checked) dDone++;
-                
+
                 tasksHtml += `
                     <label class="flex items-center p-4 bg-white border ${checked ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-200'} rounded-xl cursor-pointer hover:shadow-sm transition-all group mb-3">
                         <input type="checkbox" class="checkbox-custom rounded" ${checked ? 'checked' : ''} onchange="toggleDaily('${t}',this)">
@@ -411,7 +650,7 @@
                         <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Daily Consistency</h2>
                         <p class="text-gray-500 font-medium">These tasks reset automatically every midnight. Date: ${appState.daily.lastDate}</p>
                     </div>
-                    
+
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-sm font-bold text-gray-500 uppercase">Today's Goals</span>
@@ -427,48 +666,28 @@
         }
 
         window.toggleTask = function(subj, chap, task, el) {
-            appState.progress[subj][chap][task] = el.checked;
-            refreshChapterUrgency(el.closest('.rounded-2xl'), subj, chap);
-            
-            const chDone = getChapterProgress(subj, chap);
-            const card = el.closest('.rounded-2xl');
-            const progressText = card.querySelector('.chapter-progress-text');
-            const progressBar = card.querySelector('.chapter-progress-bar');
-            const labelSpan = el.nextElementSibling;
-            
-            if (progressText) progressText.textContent = `${chDone}/${tasks.length}`;
-            if (progressBar) progressBar.style.width = `${Math.round((chDone/tasks.length)*100)}%`;
-            
-            if(el.checked) {
-                labelSpan.classList.add('line-through', 'opacity-60');
-                if(chDone === tasks.length) {
-                    card.classList.add('bg-indigo-50', 'border-indigo-200');
-                    card.classList.remove('bg-white');
-                }
-            } else {
-                labelSpan.classList.remove('line-through', 'opacity-60');
-                card.classList.remove('bg-indigo-50', 'border-indigo-200');
-                card.classList.add('bg-white');
+            if (SPACED_TASKS.includes(task)) {
+                if (el.checked) startPass(subj, chap, task);
+                else undoPass(subj, chap, task);
             }
-
-            const stats = calculateStats();
-            document.getElementById('overall-progress-bar').style.width = `${stats.pct}%`;
-            document.getElementById('overall-progress-text').textContent = `${stats.pct}%`;
-
+            appState.progress[subj][chap][task] = el.checked;
+            renderSubject(subj); // redraw so pass info / next-due dates stay accurate
+            updateOverall();
             scheduleSave();
         };
 
         window.toggleDaily = function(task, el) {
             appState.daily.tasks[task] = el.checked;
-            renderDaily(); 
+            renderDaily();
             scheduleSave();
         };
 
         window.switchTab = function(tabName) {
+            currentTab = tabName;
             ['Physics', 'Chemistry', 'Mathematics', 'Daily'].forEach(tab => {
                 const btn = document.getElementById(`tab-${tab}`);
                 const content = document.getElementById(`content-${tab}`);
-                
+
                 if (tab === tabName) {
                     btn.classList.add('tab-active');
                     btn.classList.remove('text-gray-500', 'hover:text-gray-700', 'border-transparent', 'hover:border-gray-300');
@@ -484,24 +703,20 @@
         // ===================== URGENCY ALGORITHM START =====================
         // Urgency Score = Priority Multiplier × Task Weight × Weakness Multiplier × Due Factor
         //
-        // Everything adjustable lives in URGENCY_CONFIG. Task order is the existing `tasks`
-        // array (Lecture → Module → PYQs → Revision); the FIRST unchecked task in that order
-        // decides the task weight, even if the UI lets boxes be ticked independently.
+        // The FIRST unchecked task (Lecture → PYQs → Revision) decides the task weight.
+        // Because PYQs/Revision auto-uncheck when their spaced-repetition time arrives, a chapter
+        // that is due for revision automatically re-enters this queue, and the Due Factor
+        // (×1.2 once due, ×1.4 when 3+ days overdue) pushes it up.
         const URGENCY_CONFIG = {
-            // Fallback for unknown / missing priority values: treated like P3 (neutral, 1.0).
             defaultPriorityMultiplier: 1.0,
             priorityMultipliers: { 'P1': 1.5, 'P2': 1.25, 'P3': 1.0, 'P4': 0.8 },
-            // Keys must match the task names in `tasks`.
-            taskWeights: { 'Lecture': 4, 'Module': 3, 'PYQs': 4, 'Revision': 2 },
-            // Revision due factors. Only used if a chapter ever carries a `revisionStatus`
-            // field ('dueSoon' | 'overdue'). Nothing sets it today (see getDueFactor).
-            dueFactors: { normal: 1.0, dueSoon: 1.2, overdue: 1.4 },
+            taskWeights: { 'Lecture': 4, 'PYQs': 4, 'Revision': 3 },
+            dueFactors: { normal: 1.0, due: 1.2, overdue: 1.4 },
             maxDueFactor: 1.4
         };
 
         const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 
-        // Checkbox state for one chapter. Missing chapter/task entries count as "not done".
         function getChapterTaskState(chapter, progressData = appState.progress) {
             return (progressData && progressData[chapter.subj] && progressData[chapter.subj][chapter.chap]) || {};
         }
@@ -514,7 +729,6 @@
                 : URGENCY_CONFIG.defaultPriorityMultiplier;
         }
 
-        // First unchecked task in checkbox order, or null when every task is complete.
         function getFirstIncompleteTask(chapter, progressData = appState.progress) {
             const state = getChapterTaskState(chapter, progressData);
             for (const t of tasks) {
@@ -528,21 +742,16 @@
             return (typeof task === 'string' && hasOwn(map, task) && Number.isFinite(map[task])) ? map[task] : 0;
         }
 
-        // WEAKNESS TRACKING IS NOT IMPLEMENTED YET.
-        // The app stores no weakness, accuracy or mock-test data, so this always returns 1.0.
-        // When weakness data exists, derive the multiplier from it here; nothing else needs to change.
+        // WEAKNESS TRACKING IS NOT IMPLEMENTED YET (no accuracy / mock data stored) → always 1.0.
         function getWeaknessMultiplier(chapter) {
             return 1.0;
         }
 
-        // REVISION DUE-DATE TRACKING IS NOT IMPLEMENTED YET.
-        // The app stores no revision dates/timestamps, so every chapter currently gets 1.0.
-        // Once scheduling exists, have it set chapter.revisionStatus ('dueSoon' | 'overdue')
-        // (or replace this lookup with real date logic). The result is capped at maxDueFactor.
+        // Real due factor from the spaced-repetition schedule.
         function getDueFactor(chapter) {
             const f = URGENCY_CONFIG.dueFactors;
-            const status = chapter ? chapter.revisionStatus : undefined;
-            const factor = (typeof status === 'string' && hasOwn(f, status)) ? f[status] : f.normal;
+            const info = getChapterDueInfo(chapter.subj, chapter.chap);
+            const factor = hasOwn(f, info.status) ? f[info.status] : f.normal;
             return Math.min(factor, URGENCY_CONFIG.maxDueFactor);
         }
 
@@ -550,7 +759,6 @@
             return getFirstIncompleteTask(chapter, progressData) === null;
         }
 
-        // Returns 0 for completed chapters (they are excluded from the queue, data is untouched).
         function calculateUrgencyScore(chapter, progressData = appState.progress) {
             const firstIncomplete = getFirstIncompleteTask(chapter, progressData);
             if (firstIncomplete === null) return 0;
@@ -560,13 +768,11 @@
                 * getDueFactor(chapter);
         }
 
-        // Returns a NEW array of active (incomplete) chapters, most urgent first. Inputs are not mutated.
-        // Ties: 1) higher priority multiplier  2) earlier task in sequence  3) original chapter order.
         function sortChaptersByUrgency(chapters, progressData = appState.progress) {
             const scored = [];
             chapters.forEach((ch, i) => {
                 const firstIncomplete = getFirstIncompleteTask(ch, progressData);
-                if (firstIncomplete === null) return; // complete: leaves the active queue
+                if (firstIncomplete === null) return;
                 scored.push({
                     ...ch,
                     firstIncomplete,
@@ -586,7 +792,6 @@
         }
         // ====================== URGENCY ALGORITHM END ======================
 
-        // All chapters in their original order (priority tier, then subject, then syllabus order).
         function getAllChapters() {
             const list = [];
             let originalIndex = 0;
@@ -606,9 +811,10 @@
         }
 
         function getUrgencyLabel(chapter) {
-            return isChapterComplete(chapter)
-                ? '✓ Complete'
-                : `Urgency ${calculateUrgencyScore(chapter).toFixed(2)} · next: ${getFirstIncompleteTask(chapter)}`;
+            if (isChapterComplete(chapter)) return '✓ Complete';
+            const info = getChapterDueInfo(chapter.subj, chapter.chap);
+            const dueTxt = info.status !== 'normal' ? ` · 🔁 revision ${describeLate(info.worstDaysLate)}` : '';
+            return `Urgency ${calculateUrgencyScore(chapter).toFixed(2)} · next: ${getFirstIncompleteTask(chapter)}${dueTxt}`;
         }
 
         function getChapterPriority(subj, chap) {
@@ -618,23 +824,10 @@
             return undefined;
         }
 
-        // Called on every checkbox change so the card's score reflects the new first incomplete task.
-        function refreshChapterUrgency(card, subj, chap) {
-            const el = card && card.querySelector('.chapter-urgency-text');
-            if (el) el.textContent = getUrgencyLabel({ subj, chap, prio: getChapterPriority(subj, chap) });
-        }
-
         // ================= SUBJECT-BALANCED RECOMMENDATIONS START =================
-        // Per-subject pick = top of the EXISTING urgency queue (sortChaptersByUrgency) filtered to that subject.
-        // Overall pick     = best of the three subject picks by  Adjusted Score = Base Urgency × Subject Balance Factor.
-        // The base urgency score is never modified; the factor is applied on top and kept separate.
         const SUBJECTS = ['Physics', 'Chemistry', 'Mathematics'];
 
         const RECOMMENDATION_CONFIG = {
-            // Subject balance factors. Defaults are all 1.0 (no adjustment), so the overall ranking
-            // equals the base urgency ranking. The app stores NO study-time / session / timestamp data
-            // yet, so nothing is derived from activity. Replace the lookup in getSubjectBalanceFactor()
-            // with a rolling-window calculation once real activity data exists (keep it modest, e.g. 0.9–1.15).
             subjectBalance: { 'Physics': 1.0, 'Chemistry': 1.0, 'Mathematics': 1.0 },
             defaultSubjectBalance: 1.0
         };
@@ -646,7 +839,6 @@
                 : RECOMMENDATION_CONFIG.defaultSubjectBalance;
         }
 
-        // Fraction of all checkbox tasks ticked in a subject (real checkbox data only).
         function getSubjectCompletionFraction(subj, progressData = appState.progress) {
             let done = 0, total = 0;
             getAllChapters().filter(c => c.subj === subj).forEach(c => {
@@ -656,19 +848,21 @@
             return total > 0 ? done / total : 1;
         }
 
-        // Reason text uses only facts that exist: priority tier and the next unchecked task.
         function getRecommendationReason(rec) {
             const tier = { 'P1': 'Must-master', 'P2': 'High-priority', 'P3': 'Lower-priority' }[rec.prio] || 'Active';
+            const info = getChapterDueInfo(rec.subj, rec.chap);
+            if (info.status !== 'normal') {
+                const what = info.dueTasks.map(d => d.task).join(' + ');
+                return `${tier} chapter — spaced revision pass ${info.nextPass} is ${describeLate(info.worstDaysLate)} (${what}).`;
+            }
             const why = {
                 'Lecture': 'lecture not yet completed',
-                'Module': 'lecture done, module practice is next',
                 'PYQs': 'ready for PYQ practice',
                 'Revision': 'only revision remains'
             }[rec.firstIncomplete] || 'task pending';
             return `${tier} chapter — ${why}.`;
         }
 
-        // One independent entry per subject. A finished subject is reported as complete, never filled from another subject.
         function getSubjectRecommendations(progressData = appState.progress) {
             const all = getAllChapters();
             return SUBJECTS.map(subj => {
@@ -687,9 +881,6 @@
             });
         }
 
-        // Overall best among the three subject picks. Deterministic; no randomness.
-        // Order: adjusted score → priority multiplier → earlier task in sequence →
-        // subject with the lower share of ticked tasks (coverage tie-break) → original chapter order.
         function pickBestOverall(subjectRecs, progressData = appState.progress) {
             const candidates = subjectRecs.filter(s => !s.complete).map(s => ({
                 ...s.rec,
@@ -712,11 +903,22 @@
             const subjects = getSubjectRecommendations(progressData);
             return { subjects, best: pickBestOverall(subjects, progressData) };
         }
+
+        // Every chapter currently due for spaced revision, most overdue first (then higher priority).
+        function getDueRevisionList() {
+            return getAllChapters()
+                .map(c => ({ ...c, info: getChapterDueInfo(c.subj, c.chap) }))
+                .filter(c => c.info.status !== 'normal')
+                .sort((a, b) => (b.info.worstDaysLate - a.info.worstDaysLate)
+                    || (getPriorityMultiplier(b) - getPriorityMultiplier(a))
+                    || (a.originalIndex - b.originalIndex));
+        }
         // ================== SUBJECT-BALANCED RECOMMENDATIONS END ==================
 
         window.suggestNextChapter = function() {
-            // Recomputed from current checkbox state on every call, so it is always up to date.
+            processDueRevisions();
             const { subjects, best } = getSuggestions();
+            const dueList = getDueRevisionList();
 
             if (!best) {
                 alert("Amazing! You have completed the entire syllabus tracking!");
@@ -764,11 +966,32 @@
                 </div>`;
             }).join('');
 
+            // Topics due for spaced revision (read notes → then PYQs)
+            const dueWrap = document.getElementById('modal-due-wrap');
+            if (dueList.length) {
+                const shown = dueList.slice(0, 6);
+                document.getElementById('modal-due-list').innerHTML = shown.map(c => {
+                    const late = c.info.worstDaysLate;
+                    const cls = c.info.status === 'overdue' ? 'border-red-200 bg-red-50' : 'border-orange-200 bg-orange-50';
+                    return `<div class="rounded-lg border ${cls} px-3 py-2 flex items-center justify-between gap-2">
+                        <div>
+                            <p class="text-sm font-bold text-gray-900">${c.chap} <span class="text-[10px] font-semibold text-gray-500 uppercase">· ${c.subj}</span></p>
+                            <p class="text-xs text-gray-600">Pass ${c.info.nextPass}: ${c.info.dueTasks.map(d => d.task).join(' + ')}</p>
+                        </div>
+                        <span class="text-xs font-bold ${c.info.status === 'overdue' ? 'text-red-700' : 'text-orange-700'} whitespace-nowrap">${describeLate(late)}</span>
+                    </div>`;
+                }).join('') + (dueList.length > shown.length ? `<p class="text-xs text-gray-500">+ ${dueList.length - shown.length} more due on the chapter cards</p>` : '');
+                document.getElementById('modal-due-title').textContent = `Due for revision (${dueList.length})`;
+                dueWrap.classList.remove('hidden');
+            } else {
+                dueWrap.classList.add('hidden');
+            }
+
             const w = URGENCY_CONFIG.taskWeights;
             document.getElementById('modal-formula-note').textContent =
                 'Chapter urgency = priority × task weight × weakness × due factor, using the first incomplete task ('
-                + tasks.map(t => `${t}: ${w[t]}`).join(', ') + '). Overall pick = urgency × subject balance factor '
-                + '(currently 1.0 for all subjects; weakness and due factors are also 1.0 as no such data is tracked yet).';
+                + tasks.map(t => `${t}: ${w[t]}`).join(', ') + '). PYQs and Revision auto-untick on a spaced schedule (JEE-tuned, '
+                + getDaysLeft() + ' days left); due chapters get ×1.2, 3+ days overdue ×1.4. Weakness is 1.0 as no such data is tracked yet.';
 
             document.getElementById('suggestion-modal').classList.remove('hidden');
         };

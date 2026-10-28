@@ -55,6 +55,9 @@
                         </div>
                     </div>
                     <button onclick="editExamDate()" id="exam-chip" class="text-xs font-bold px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap transition-colors"></button>
+                    <button onclick="openBreakModal()" id="break-btn" class="bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 font-bold py-2 px-3 rounded-lg text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors" title="Set a break timer">
+                        <span>☕ Take a Break</span><span id="break-btn-time" class="hidden font-mono text-xs bg-amber-200/70 px-1.5 py-0.5 rounded"></span>
+                    </button>
                     <button onclick="suggestNextChapter()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-sm whitespace-nowrap flex items-center gap-2">
                         <span>🎯 Suggest Next</span>
                     </button>
@@ -125,6 +128,57 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Break timer: setup / running -->
+    <div id="break-modal" class="fixed inset-0 hidden" style="z-index:55" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 bg-gray-900/50" onclick="closeBreakModal()"></div>
+        <div class="relative mx-auto mt-24 w-[92%] max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-gray-900">☕ Take a Break</h3>
+                <button onclick="closeBreakModal()" class="text-gray-400 hover:text-gray-700 text-xl leading-none" aria-label="Close">&times;</button>
+            </div>
+
+            <div id="break-setup">
+                <p class="text-sm text-gray-500 mb-3">Pick how long you want to rest. When time is up you'll get an alarm and a notification, even if you're on YouTube or another tab.</p>
+                <div class="flex flex-wrap gap-2 mb-3" id="break-presets">
+                    <button onclick="setBreakMinutes(5)" class="break-chip px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-amber-50" data-min="5">5 min</button>
+                    <button onclick="setBreakMinutes(10)" class="break-chip px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-amber-50" data-min="10">10 min</button>
+                    <button onclick="setBreakMinutes(15)" class="break-chip px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-amber-50" data-min="15">15 min</button>
+                    <button onclick="setBreakMinutes(20)" class="break-chip px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-amber-50" data-min="20">20 min</button>
+                    <button onclick="setBreakMinutes(30)" class="break-chip px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-amber-50" data-min="30">30 min</button>
+                </div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Custom minutes</label>
+                <input id="break-minutes" type="number" min="1" max="180" value="10" oninput="highlightBreakChip()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400 mb-4">
+                <div class="flex gap-2">
+                    <button onclick="startBreak()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg shadow transition-colors">Start break</button>
+                    <button onclick="testBreakSound()" class="px-3 py-2.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50" title="Play a short test beep">🔊 Test</button>
+                </div>
+                <p id="break-notif-note" class="mt-3 text-xs text-gray-400"></p>
+            </div>
+
+            <div id="break-running" class="hidden text-center">
+                <p class="text-sm text-gray-500 mb-1">Break ends in</p>
+                <div id="break-big-time" class="text-6xl font-extrabold font-mono text-amber-600 tracking-tight mb-3">00:00</div>
+                <div class="w-full bg-gray-100 rounded-full h-2 mb-5 overflow-hidden"><div id="break-bar" class="bg-amber-500 h-2 rounded-full transition-all" style="width:0%"></div></div>
+                <div class="flex gap-2">
+                    <button onclick="extendBreak(5)" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50">+5 min</button>
+                    <button onclick="cancelBreak()" class="flex-1 px-3 py-2 rounded-lg bg-gray-900 text-white text-sm font-bold hover:bg-gray-700">Cancel break</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Break over alarm -->
+    <div id="break-over" class="fixed inset-0 hidden" style="z-index:60" role="alertdialog" aria-modal="true">
+        <div class="absolute inset-0 bg-gray-900/80"></div>
+        <div class="relative mx-auto mt-28 w-[92%] max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <div class="text-6xl mb-3">⏰</div>
+            <h3 class="text-2xl font-extrabold text-gray-900 mb-1">Break's over!</h3>
+            <p class="text-gray-500 mb-6">Close the other tabs and get back to studying 📚</p>
+            <button onclick="dismissBreakAlarm()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors mb-2">I'm back — start studying</button>
+            <button onclick="snoozeBreak(5)" class="w-full text-sm font-bold text-gray-500 hover:text-gray-800 py-2">Snooze 5 more minutes</button>
         </div>
     </div>
 
@@ -329,6 +383,7 @@
         function initApp() {
             loadData();
             renderAll();
+            showImportReport();
             // Check for due revisions every minute and whenever you come back to the tab.
             setInterval(refreshDue, 60000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDue(); });
@@ -447,9 +502,78 @@
             }
         }
 
+        // Human-readable snapshot of everything pending / due / how many passes are done.
+        // It is written into the export file for reference; on import the real data (progress + spaced) is what gets restored.
+        function buildExportSummary() {
+            const chapters = [];
+            const pending = [];
+            let totalPYQPasses = 0, totalRevPasses = 0, completeChapters = 0, dueCount = 0, overdueCount = 0;
+
+            getAllChapters().forEach(c => {
+                const taskInfo = {};
+                tasks.forEach(t => {
+                    const done = !!appState.progress[c.subj][c.chap][t];
+                    if (!SPACED_TASKS.includes(t)) {
+                        taskInfo[t] = { done };
+                        if (!done) pending.push({ subject: c.subj, chapter: c.chap, priority: c.prio, task: t, reason: 'not done yet' });
+                        return;
+                    }
+                    const rec = (appState.spaced[c.subj] && appState.spaced[c.subj][c.chap] && appState.spaced[c.subj][c.chap][t]) || { level: 0, doneAt: null, dueAt: null };
+                    const late = getTaskDueDays(c.subj, c.chap, t);
+                    let status = done ? 'done' : (rec.level > 0 ? (late !== null && late >= SPACING_CONFIG.overdueAfterDays ? 'overdue' : 'due') : 'pending');
+                    taskInfo[t] = {
+                        done,
+                        passesCompleted: rec.level || 0,
+                        lastDoneOn: rec.doneAt ? toISODate(rec.doneAt) : null,
+                        nextDueOn: done && rec.dueAt ? toISODate(rec.dueAt) : null,
+                        status,
+                        daysOverdue: late
+                    };
+                    if (t === 'PYQs') totalPYQPasses += rec.level || 0;
+                    if (t === 'Revision') totalRevPasses += rec.level || 0;
+                    if (!done) {
+                        pending.push({
+                            subject: c.subj, chapter: c.chap, priority: c.prio, task: t,
+                            reason: rec.level > 0 ? `revision pass ${rec.level + 1} due (${late !== null ? describeLate(late) : 'due'})` : 'not done yet',
+                            passesCompleted: rec.level || 0,
+                            daysOverdue: late
+                        });
+                    }
+                });
+                const info = getChapterDueInfo(c.subj, c.chap);
+                if (info.status !== 'normal') { dueCount++; if (info.status === 'overdue') overdueCount++; }
+                if (getChapterProgress(c.subj, c.chap) === tasks.length) completeChapters++;
+                chapters.push({ subject: c.subj, chapter: c.chap, priority: c.prio, tasks: taskInfo });
+            });
+
+            const stats = calculateStats();
+            return {
+                totals: {
+                    chapters: chapters.length,
+                    completeChapters,
+                    completionPercent: stats.pct,
+                    pendingTasks: pending.length,
+                    chaptersDueForRevision: dueCount,
+                    chaptersOverdue: overdueCount,
+                    pyqPassesCompleted: totalPYQPasses,
+                    revisionPassesCompleted: totalRevPasses,
+                    daysLeftToExam: getDaysLeft()
+                },
+                pendingTasks: pending,
+                chapters
+            };
+        }
+
         function exportProgress() {
-            const data = JSON.stringify(appState);
-            const blob = new Blob([data], { type: "application/json" });
+            processDueRevisions();
+            const payload = {
+                app: 'JEE Ultimate Prep Tracker',
+                exportVersion: 2,
+                exportedAt: new Date().toISOString(),
+                summary: buildExportSummary(), // reference only
+                ...appState                    // the real data: progress, spaced, examDate, daily
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -467,17 +591,46 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const importedData = JSON.parse(e.target.result);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(importedData));
-                    alert("Progress imported successfully! The page will now reload.");
+                    const imported = JSON.parse(e.target.result);
+                    if (!imported || typeof imported !== 'object' || (!imported.progress && !imported.spaced)) {
+                        throw new Error('Not a tracker backup');
+                    }
+                    // Keep only the real data; the summary/meta are regenerated from it.
+                    const clean = {
+                        progress: imported.progress || {},
+                        spaced: imported.spaced || {},
+                        daily: imported.daily
+                    };
+                    if (imported.examDate) clean.examDate = imported.examDate;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+                    sessionStorage.setItem('jee_import_report', '1');
                     location.reload();
                 } catch (error) {
-                    alert("Error importing file. Please make sure it is a valid JSON backup file.");
+                    alert("Error importing file. Please make sure it is a valid JSON backup file exported from this tracker.");
                     console.error(error);
                 }
             };
             reader.readAsText(file);
             event.target.value = '';
+        }
+
+        // Shown once after an import reload, computed from the restored (and re-checked) live data.
+        function showImportReport() {
+            try {
+                if (!sessionStorage.getItem('jee_import_report')) return;
+                sessionStorage.removeItem('jee_import_report');
+                const t = buildExportSummary().totals;
+                alert(
+                    'Import complete ✅\n\n' +
+                    `Chapters complete: ${t.completeChapters}/${t.chapters} (${t.completionPercent}% of all tasks)\n` +
+                    `PYQ passes done: ${t.pyqPassesCompleted}\n` +
+                    `Revision passes done: ${t.revisionPassesCompleted}\n` +
+                    `Pending tasks: ${t.pendingTasks}\n` +
+                    `Chapters due for revision: ${t.chaptersDueForRevision} (${t.chaptersOverdue} overdue)\n` +
+                    `Days to exam: ${t.daysLeftToExam}\n\n` +
+                    'Revision schedules were restored exactly; anything that came due while the backup was away has been unticked.'
+                );
+            } catch (e) { console.error(e); }
         }
 
         function showSyncStatus(msg, colorClass, spinner = false) {
@@ -999,6 +1152,270 @@
         window.closeModal = function() {
             document.getElementById('suggestion-modal').classList.add('hidden');
         };
+
+
+        // ===================== BREAK TIMER START =====================
+        // Header "Take a Break" button → pick minutes → countdown shown inside the button.
+        // When it ends: looping alarm sound + browser notification (click it to jump back to this tab)
+        // + flashing tab title + a full-screen "Break's over" card. The alarm keeps going until you dismiss it.
+        // Timing uses an absolute end time (and a Web Worker clock when available) so it stays accurate
+        // even when this tab is in the background.
+        const BREAK_KEY = 'jee_break_timer_v1';
+        const BASE_TITLE = document.title || 'JEE Tracker';
+        let breakState = null;      // { endAt, totalMs }
+        let breakClock = null;      // { stop() }
+        let audioCtx = null;
+        let alarmNodes = [];
+        let titleFlashTimer = null;
+        let breakNotification = null;
+
+        function fmtClock(ms) {
+            const total = Math.max(0, Math.ceil(ms / 1000));
+            const m = Math.floor(total / 60), s = total % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function unlockAudio() {
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                if (!audioCtx) audioCtx = new AC();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (e) { console.error(e); }
+        }
+
+        function scheduleBeep(freq, startAt, dur, volume) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, startAt);
+            gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(startAt); osc.stop(startAt + dur + 0.05);
+            alarmNodes.push(osc);
+        }
+
+        function startAlarmSound() {
+            unlockAudio();
+            if (!audioCtx) return;
+            stopAlarmSound();
+            const t0 = audioCtx.currentTime + 0.1;
+            // ~4 minutes of "beep-beep-beep ... pause" pre-scheduled on the audio clock (not throttled in background tabs)
+            for (let i = 0; i < 160; i++) {
+                const t = t0 + i * 1.5;
+                scheduleBeep(988, t, 0.18, 0.35);
+                scheduleBeep(988, t + 0.28, 0.18, 0.35);
+                scheduleBeep(1318, t + 0.56, 0.3, 0.35);
+            }
+        }
+
+        function stopAlarmSound() {
+            alarmNodes.forEach(o => { try { o.stop(); o.disconnect(); } catch (e) {} });
+            alarmNodes = [];
+        }
+
+        window.testBreakSound = function() {
+            unlockAudio();
+            if (!audioCtx) { alert('Your browser does not support audio playback.'); return; }
+            const t = audioCtx.currentTime + 0.05;
+            scheduleBeep(988, t, 0.18, 0.3);
+            scheduleBeep(1318, t + 0.25, 0.3, 0.3);
+        };
+
+        function startTitleFlash() {
+            stopTitleFlash();
+            let on = false;
+            titleFlashTimer = setInterval(() => {
+                on = !on;
+                document.title = on ? '⏰ BREAK OVER!' : '📚 Back to study!';
+            }, 800);
+        }
+        function stopTitleFlash() {
+            if (titleFlashTimer) { clearInterval(titleFlashTimer); titleFlashTimer = null; }
+            document.title = BASE_TITLE;
+        }
+
+        function makeClock(onTick) {
+            // Prefer a Web Worker clock: it is not throttled like timers on a hidden tab.
+            try {
+                const src = "let t=null;onmessage=function(e){clearInterval(t);if(e.data==='start'){t=setInterval(function(){postMessage(0)},250)}}";
+                const url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+                const w = new Worker(url);
+                w.onmessage = onTick;
+                w.postMessage('start');
+                return { stop() { try { w.postMessage('stop'); w.terminate(); URL.revokeObjectURL(url); } catch (e) {} } };
+            } catch (e) {
+                const id = setInterval(onTick, 500);
+                return { stop() { clearInterval(id); } };
+            }
+        }
+
+        function updateBreakUI() {
+            const btnTime = document.getElementById('break-btn-time');
+            const big = document.getElementById('break-big-time');
+            const bar = document.getElementById('break-bar');
+            if (!breakState) {
+                btnTime.classList.add('hidden');
+                return;
+            }
+            const remaining = breakState.endAt - Date.now();
+            btnTime.textContent = fmtClock(remaining);
+            btnTime.classList.remove('hidden');
+            big.textContent = fmtClock(remaining);
+            const pct = Math.min(100, Math.max(0, (1 - remaining / breakState.totalMs) * 100));
+            bar.style.width = pct + '%';
+            if (!titleFlashTimer) document.title = `☕ ${fmtClock(remaining)} · ${BASE_TITLE}`;
+        }
+
+        function breakTick() {
+            if (!breakState) return;
+            if (breakState.endAt - Date.now() <= 0) finishBreak();
+            else updateBreakUI();
+        }
+
+        function beginBreakClock() {
+            if (breakClock) breakClock.stop();
+            breakClock = makeClock(breakTick);
+            updateBreakUI();
+            showBreakView();
+        }
+
+        function showBreakView() {
+            document.getElementById('break-setup').classList.toggle('hidden', !!breakState);
+            document.getElementById('break-running').classList.toggle('hidden', !breakState);
+        }
+
+        function persistBreak() {
+            try {
+                if (breakState) localStorage.setItem(BREAK_KEY, JSON.stringify(breakState));
+                else localStorage.removeItem(BREAK_KEY);
+            } catch (e) {}
+        }
+
+        function refreshNotifNote() {
+            const el = document.getElementById('break-notif-note');
+            if (!el) return;
+            if (!('Notification' in window)) el.textContent = 'This browser has no notification support. The alarm sound and flashing tab will be used.';
+            else if (Notification.permission === 'denied') el.textContent = 'Notifications are blocked for this page. Allow them in your browser site settings to get a pop-up. The alarm sound still works.';
+            else if (Notification.permission === 'granted') el.textContent = 'Notifications are on. Keep this tab open while you rest.';
+            else el.textContent = 'Your browser will ask to allow notifications when you start. Allow it so you can be pulled back from other tabs.';
+        }
+
+        window.openBreakModal = function() {
+            showBreakView();
+            updateBreakUI();
+            highlightBreakChip();
+            refreshNotifNote();
+            document.getElementById('break-modal').classList.remove('hidden');
+        };
+        window.closeBreakModal = function() { document.getElementById('break-modal').classList.add('hidden'); };
+
+        window.setBreakMinutes = function(m) {
+            document.getElementById('break-minutes').value = m;
+            highlightBreakChip();
+        };
+        window.highlightBreakChip = function() {
+            const v = parseInt(document.getElementById('break-minutes').value, 10);
+            document.querySelectorAll('.break-chip').forEach(c => {
+                const on = parseInt(c.dataset.min, 10) === v;
+                c.classList.toggle('bg-amber-100', on);
+                c.classList.toggle('border-amber-400', on);
+            });
+        };
+
+        window.startBreak = function() {
+            const mins = parseInt(document.getElementById('break-minutes').value, 10);
+            if (!Number.isFinite(mins) || mins < 1 || mins > 180) { alert('Enter a break length between 1 and 180 minutes.'); return; }
+            unlockAudio(); // must happen inside this click so the alarm is allowed to play later
+            try {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    const r = Notification.requestPermission();
+                    if (r && r.then) r.then(refreshNotifNote);
+                }
+            } catch (e) {}
+            const totalMs = mins * 60000;
+            breakState = { endAt: Date.now() + totalMs, totalMs };
+            persistBreak();
+            beginBreakClock();
+            closeBreakModal();
+        };
+
+        window.extendBreak = function(mins) {
+            if (!breakState) return;
+            breakState.endAt += mins * 60000;
+            breakState.totalMs += mins * 60000;
+            persistBreak();
+            updateBreakUI();
+        };
+
+        window.cancelBreak = function() {
+            breakState = null;
+            persistBreak();
+            if (breakClock) { breakClock.stop(); breakClock = null; }
+            stopTitleFlash();
+            updateBreakUI();
+            showBreakView();
+            closeBreakModal();
+        };
+
+        function finishBreak() {
+            breakState = null;
+            persistBreak();
+            if (breakClock) { breakClock.stop(); breakClock = null; }
+            updateBreakUI();
+            showBreakView();
+            closeBreakModal();
+            document.getElementById('break-over').classList.remove('hidden');
+            startAlarmSound();
+            startTitleFlash();
+            try {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    breakNotification = new Notification('⏰ Break over!', {
+                        body: 'Time to get back to studying 📚 (click to return)',
+                        requireInteraction: true,
+                        tag: 'jee-break-over'
+                    });
+                    breakNotification.onclick = function() { window.focus(); this.close(); };
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        window.dismissBreakAlarm = function() {
+            stopAlarmSound();
+            stopTitleFlash();
+            try { if (breakNotification) breakNotification.close(); } catch (e) {}
+            breakNotification = null;
+            document.getElementById('break-over').classList.add('hidden');
+        };
+
+        window.snoozeBreak = function(mins) {
+            dismissBreakAlarm();
+            const totalMs = mins * 60000;
+            breakState = { endAt: Date.now() + totalMs, totalMs };
+            persistBreak();
+            beginBreakClock();
+        };
+
+        function restoreBreak() {
+            try {
+                const raw = localStorage.getItem(BREAK_KEY);
+                if (!raw) return;
+                const st = JSON.parse(raw);
+                if (!st || !Number.isFinite(st.endAt) || !Number.isFinite(st.totalMs)) { localStorage.removeItem(BREAK_KEY); return; }
+                breakState = st;
+                // Browsers only allow sound after a click, so unlock on the first interaction after a reload.
+                const unlock = () => { unlockAudio(); document.removeEventListener('pointerdown', unlock); };
+                document.addEventListener('pointerdown', unlock);
+                if (st.endAt <= Date.now()) finishBreak();
+                else beginBreakClock();
+            } catch (e) { console.error(e); }
+        }
+
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) breakTick(); });
+        window.addEventListener('DOMContentLoaded', restoreBreak);
+        // ====================== BREAK TIMER END ======================
 
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
